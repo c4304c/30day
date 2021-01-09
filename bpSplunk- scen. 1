@@ -1,0 +1,44 @@
+Blue Primer Series Splunk
+
+Scenario #1 - APT
+In this scenario, reports of the below graphic come in from your user community when they visit the Wayne Enterprises website, and some of the reports reference "P01s0n1vy." 
+In case you are unaware, P01s0n1vy is an APT group that has targeted Wayne Enterprises. Your goal, as Alice, is to investigate the defacement, with an eye towards 
+reconstructing the attack via the Lockheed Martin Kill Chain.
+
+
+FIND THE IP:
+
+	index=botsv1 imreallynotbatman.com  
+click sourcetypes field  to get to find the sourcetypes
+click src field to get ips
+
+add sourcetype=stream:http to search to see what the data that is being seen over the wire
+	index=botsv1 imreallynotbatman.com sourcetype=stream:http
+94.432% seems interesting
+
+VALIDATE THE IP SCANNING YOU:
+
+Change sourcetype to suricata and IP investigating, from here we can view signitures 	
+	index=botsv1 imreallynotbatman.com src=40.80.148.42 sourcetype=suricata
+there are a lot of possible attack coming from that src IP
+
+1. 40.80.148.42
+
+ID THE SCANNER:
+go back to the http stream and look at the source header from that IP
+	index=botsv1 src=40.80.148.42 sourcetype=stream:http
+we find the scanner in the header
+
+2. Acunetix 
+
+
+WHAT IS THE TARGET SERVER and CMS on it?
+	index=botsv1 src=40.80.148.42 sourcetype=stream:http
+99.995% of the traffic is going to 192.168.250.70
+
+3. 192.168.250.70
+
+add the dest ip in search and look at the URI to find the files, most are in joomla directory
+	index=botsv1 src=40.80.148.42 dest=192.168.250.70 sourcetype=stream:http
+
+4. joomla
