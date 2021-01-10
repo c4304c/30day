@@ -1,0 +1,48 @@
+The following is 1st Suricata lab (also did a quick IDS/IPS readthrough)
+
+Your network contains the following machines:
+
+desktop - 192.168.6.1
+student:student
+
+firewall - 192.168.6.4, 192.168.10.254
+student:student
+
+server - 192.168.10.2
+no SSH access
+
+All network traffic from and to the server is routed through the firewall.
+
+
+==============================
+SSH into the firewall
+
+sudo ssh student@firewall
+
+1. INSTALL SURICATA (install it directly from the project’s official Personal Package Archives repository):
+student@firewall~$sudo add-apt-repository ppa:oisf/suricata-stable
+student@firewall~$sudo apt-get update
+student@firewall~$sudo apt-get install suricata
+
+2. Configuring Suricata to listen on enp1s10
+
+Change the listening interface under af-packet: to enp1s10
+student@firewall~$grep -in "af-packet:" /etc/suricata/suricata.yaml
+student@firewall~$vi +580 /etc/suricata/suricata.yaml
+
+Change IP address range for HOME_NET to 192.168.10.0/24
+student@firewall~$grep -in "HOME_NET" /etc/suricata/suricata.yaml
+student@firewall~$vi +15 /etc/suricata/suricata.yaml
+
+3. Restart Suricata
+student@firewall~$service suricata restart
+
+4. Monitor and investigate network traffic originating from the server:
+
+119:{"timestamp":"2021-01-10T10:34:56.867303+0000","flow_id":239491005561831,"in_iface":"enp1s10","event_type":"dns","src_ip":"192.168.10.2",
+"src_port":34217,"dest_ip":"1.1.1.1","dest_port":53,"proto":"UDP","dns":{"type":"query","id":10045,"rrname":"ues0jibiiz5kes9aphai7quohkeejee5.lab",
+"rrtype":"A","tx_id":0}}
+
+
+What is the malicious domain that is being queried from the server?
+ues0jibiiz5kes9aphai7quohkeejee5.lab
