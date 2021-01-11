@@ -92,10 +92,10 @@ click on events and go to userpasswords field, no top values over 1, total event
 =======================================================================
 What is the name of the executable uploaded by P01s0n1vy?
 
-we know the IP she was attacking with (40.80.148.42) and the server IP 
+we know the 2 IPs that logged in and the server IP 
 so we look that up and search for executables
 
-	index=botsv1 sourcetype=stream:http src="40.80.148.42" dest="192.168.250.70" *.exe
+	index=botsv1 sourcetype=stream:http src="40.80.148.42" OR "23.22.63.114" dest="192.168.250.70" *.exe
 
 we find a php file and and exe file in the part_filename{} field
 
