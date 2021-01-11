@@ -1,0 +1,114 @@
+Not much completed here but definitly a lot of work, spent about 3 hours working on my first Splunk BOTS, a lot of researching commands. Continued the APT in the tryhackme splunk practice.
+
+WHAT ADDRESS IS DOING A BRUTE_FORCE?
+look at the http stream and check source IPs going  to out server's IP 
+	index=botsv1 sourcetype=stream:http dest="192.168.250.70"
+2 ips external IPs show: 40.80.148.42 and 23.22.63.114
+added each one to the search string and looked at the form data(1st was src="40.80.148.42")
+Nothing interesting to detect a brute force
+src="23.22.63.114" form data had many attempts with different passwords for admin
+
+5. 23.22.63.114
+=======================================================================
+
+What was the first password attempted in the attack?
+
+In one attack, I saw it was Post
+
+reverse the order and add POST method
+index=botsv1 sourcetype=stream:http dest="192.168.250.70" src="23.22.63.114" 
+| reverse
+
+6. 12345678
+=======================================================================
+One of the passwords in the brute force attack is James Brodsky's favorite Coldplay song. 
+Which six character song is it?
+
+adding regex to the search to pull the password from the formdata field,
+created a field for the length of the password attempted,
+searched for a password length of 6 in that field and put them into a table
+	index=botsv1 sourcetype=stream:http dest="192.168.250.70" src="23.22.63.114" http_method=POST 
+| rex field=form_data "passwd=(?<userpassword>\w+)" | eval passlen=len(userpassword) | search passlen=6
+| table userpassword passlen
+
+looked up coldplay(not my music really) songs and first one with 6 letters was yellow
+
+add search for yellow to the list tabel created
+	index=botsv1 sourcetype=stream:http dest="192.168.250.70" src="23.22.63.114" http_method=POST 
+| rex field=form_data "passwd=(?<userpassword>\w+)" | eval passlen=len(userpassword) | search passlen=6
+| table userpassword passle| where match(userpassword,"yellow")
+
+7.  yellow
+=======================================================================
+What was the correct password for admin access to the content management system running imreallynotbatman.com?
+
+we know of at least 1 other external IP had communication with that server (40.80.148.42)
+So I used Regex again to pull the password used and check if there was 1 used by both IPs
+
+	index=botsv1 sourcetype=stream:http form_data=*username*passwd* 
+dest_ip=192.168.250.70 | rex field=form_data "passwd=(?<userpassword>\w+)" 
+| stats count by userpassword | sort - count
+
+"batman" was the only one with 2, looking at the events, 1 event from each of those 2 IPs.
+
+8. batman
+=======================================================================
+
+What was the average password length used in the password brute forcing attempt rounded to closest whole integer?
+use regex to pull the passwords again and create a table
+
+get the password lengths and average them, than round them
+
+index=botsv1 sourcetype=stream:http dest="192.168.250.70" src="23.22.63.114" http_method=POST 
+| rex field=form_data "passwd=(?<userpassword>\w+)" | table userpassword 
+| eval mylen=len(userpassword) 
+| stats avg(mylen) AS aver
+| eval averROUND=round(aver,0)
+
+
+9. 6
+=======================================================================
+How many seconds elapsed between the time the brute force password scan identified the correct password and the compromised login rounded to 2 decimal places?
+
+We know the password was batman, so we look when batman was used by creating a search and putting results in a table with the time and the source
+
+	index=botsv1 sourcetype=stream:http  | rex field=form_data "passwd=(?<userpassword>\w+)" | search userpassword=batman | table _time src
+
+pull out a calculater, subtract and round 
+1 min 32.169 sec = 92.169 secs, round = 92.17
+
+10. 92.17
+=======================================================================
+How many unique passwords were attempted in the brute force attempt?
+
+recreate the password table
+	index=botsv1 sourcetype=stream:http dest="192.168.250.70" src="23.22.63.114" http_method=POST 
+| rex field=form_data "passwd=(?<userpassword>\w+)" | table userpassword
+
+click on events and go to userpasswords field, no top values over 1, total events were 412
+
+11. 412
+=======================================================================
+What is the name of the executable uploaded by P01s0n1vy?
+
+we know the IP she was attacking with (40.80.148.42) and the server IP 
+so we look that up and search for executables
+
+index=botsv1 sourcetype=stream:http src="40.80.148.42" dest="192.168.250.70" *.exe
+
+we find a php file and and exe file in the part_filename{} field
+
+12. 3791.exe
+=======================================================================
+What is the MD5 hash of the executable uploaded?
+
+look up the execubale and see what sourceypes it shows up in
+	index=botsv1 3791.exe
+from here we see a syslog files, they would have the hash info... click it
+
+this exe was most likely run, so in click on process created.
+I find 3791.exe in the joomla directory under the app field.
+I click that and there is 1 event with a MD5. 
+
+
+13. AAE3F5A29935E6ABCC2C2754D12A9AF0
