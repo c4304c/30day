@@ -1,4 +1,5 @@
-Not much completed here but definitly a lot of work, spent about 3 hours working on my first Splunk BOTS, a lot of researching commands. Continued the APT in the tryhackme splunk practice.
+Not much completed here but definitly a lot of work, spent about 3 hours working on my first Splunk BOTS, a lot of researching commands. 
+Continued the APT in the tryhackme splunk practice.
 
 WHAT ADDRESS IS DOING A BRUTE_FORCE?
 look at the http stream and check source IPs going  to out server's IP 
@@ -16,7 +17,7 @@ What was the first password attempted in the attack?
 In one attack, I saw it was Post
 
 reverse the order and add POST method
-index=botsv1 sourcetype=stream:http dest="192.168.250.70" src="23.22.63.114" 
+	index=botsv1 sourcetype=stream:http dest="192.168.250.70" src="23.22.63.114" 
 | reverse
 
 6. 12345678
@@ -59,7 +60,7 @@ use regex to pull the passwords again and create a table
 
 get the password lengths and average them, than round them
 
-index=botsv1 sourcetype=stream:http dest="192.168.250.70" src="23.22.63.114" http_method=POST 
+	index=botsv1 sourcetype=stream:http dest="192.168.250.70" src="23.22.63.114" http_method=POST 
 | rex field=form_data "passwd=(?<userpassword>\w+)" | table userpassword 
 | eval mylen=len(userpassword) 
 | stats avg(mylen) AS aver
@@ -94,7 +95,7 @@ What is the name of the executable uploaded by P01s0n1vy?
 we know the IP she was attacking with (40.80.148.42) and the server IP 
 so we look that up and search for executables
 
-index=botsv1 sourcetype=stream:http src="40.80.148.42" dest="192.168.250.70" *.exe
+	index=botsv1 sourcetype=stream:http src="40.80.148.42" dest="192.168.250.70" *.exe
 
 we find a php file and and exe file in the part_filename{} field
 
