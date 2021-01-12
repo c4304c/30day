@@ -1,0 +1,82 @@
+DAY 5
+
+YARA RULE WRITING
+Platform : Rangeforce
+
+	Rule File
+     	Find the sample.pdf and go back to Documents and make a rule file
+student@desktop:~$ cd /home/student/Documents/sample
+student@desktop:~/Documents/sample$ ls
+sample.pdf
+student@desktop:~/Documents/sample$ ls
+student@desktop:~/Documents/sample$ cd ..
+student@desktop:~/Documents$ touch pdf_file.yar
+
+	Identifier and Meta
+
+student@desktop:~/Documents$ vi pdf_file.yar	
+{
+  meta:
+    author = "chris"
+    description = "This is an example of the identifier and meta section."
+}
+
+
+	Strings - Strings Analysis
+student@desktop:~/Documents$ cd sample
+student@desktop:~/Documents/sample$ strings sample.pdf
+
+%PDF-1.7
+{data}
+%%EOF
+
+What is the version number of the PDF sample?
+1.7
+
+	Strings - Strings Variables
+    add start and end strings to pdf_life.yar
+
+student@desktop:~/Documents$ vi pdf_file.yar
+
+rule PDF_check
+{
+  meta:
+    author = "chris"
+    description = "This is an example of the identifier and meta section."
+
+  strings:
+    $start = "%PDF"
+    $end = "%%EOF"
+}
+
+	Conditions
+    add conditions to pdf_life.yar
+
+student@desktop:~/Documents$ vi pdf_file.yar
+
+rule PDF_check
+{
+  meta:
+    author = "chris"
+    description = "This is an example of the identifier and meta section."
+
+  strings:
+    $start = "%PDF"
+    $end = "%%EOF
+
+  condition: 
+    $start at 0 and $end
+}
+
+	Rule Test
+
+student@desktop:~/Documents$ yara -s pdf_file.yar sample/sample.pdf
+PDF_check sample/sample.pdf
+0x0:$start: %PDF
+0x18f4:$end: %%EOF
+0x19a5:$end: %%EOF
+
+
+	
+What is the offset of the last $end variable match?
+0x19a5
