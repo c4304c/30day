@@ -1,0 +1,115 @@
+Suricata : IDS rules
+Platform: Rangeforce
+
+log into friewall:
+ssh student@firewall
+
+CONFIGURE SURICATA
+
+Create a custom rule file
+student@firewall$touch /etc/suricata/rules/custom.rules
+
+   modfiy config
+student@firewall$grep -in default /etc/suricata/suricata.yaml
+student@firewall$sudo vi +1867 /etc/suricata/suricata.yaml
+default-rule-path: /etc/suricata/rules
+rule-files 
+  - cusom.rules
+  - suricata.rules
+
+student@firewall$push the changes
+student@firewall$suricata --dump-config
+
+      CREATE RULE
+student@firewall$sudo vi /etc/suricata/rules/custom.rules
+alert http any any <> any any (msg:"HTTP traffic";  sid:10000001; rev: 1;)
+
+   The above line will write the following rule:
+action: alert
+protocol: http
+source: any
+source port: any
+direction: both ways
+destination: any
+destination port: any
+message: http connection
+signature ID: 1000001
+revision: 1
+
+      Reload the rules
+student@firewall$sudo suricatasc -c reload-rules
+
+      Read the log
+student@firewall$tail -f /var/log/suricata/fast.log
+
+As you did not specify a priority for the rule, what is the default Priority for the alerts?
+3
+
+RULE PRIORITY
+    Write the following rule:
+
+action: alert
+protocol: udp
+source: 192.168.10.2
+source port: any
+direction: ->
+destination: any
+destination port: any
+message: udp traffic
+priority: 3
+signature ID: 1000002
+revision: 1
+
+student@firewall$sudo vi /etc/suricata/rules/custom.rules
+alert udp 192.168.10.2 any -> any any (msg: "udp traffic"; priority:3; sid:1000002; rev: 1;)
+
+      Reload the rules
+student@firewall$sudo suricatasc -c reload-rules
+
+      Read the log
+student@firewall$tail -f /var/log/suricata/fast.log
+
+To which IP does the server send UDP packets?
+1.1.1.1
+To which port does the server send UDP packets?
+53
+
+META: CLASSTYPE
+    Write the following 2 rules:
+
+action: alert
+protocol: tcp
+source: any
+source port: any
+direction: ->
+destination: 192.168.6.4
+destination port: 3306
+message: incoming mysql connection
+classtype: not-suspicious
+signature ID: 1000003
+revision: 1
+
+action: alert
+protocol: tcp
+source: 192.168.6.4
+source port: 3306
+direction: ->
+destination: any
+destination port: any
+message: outgoing mysql connection
+classtype: not-suspicious
+signature ID: 1000004
+revision: 1
+
+student@firewall$sudo vi /etc/suricata/rules/custom.rules
+alert tcp any any -> 192.168.6.4 3306 (msg:"incoming mysql connection"; classtype:not-suspicious; sid:100003; rev:1;)
+alert tcp 192.168.6.4 3306 -> any any (msg:"outgoing mysql connection"; classtype:not-suspicious; sid:100003; rev:1;)
+
+      Reload the rules
+student@firewall$sudo suricatasc -c reload-rules
+
+      Read the log
+student@firewall$tail -f /var/log/suricata/fast.log
+
+Which IP sends MySQL requests?
+10.22.22.22
