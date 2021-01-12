@@ -1,0 +1,45 @@
+Day 5 
+
+NMAP Intro
+Platform: Rangeforce
+
+	Intro
+Which Nmap flag is used to enable OS detection?
+
+root@kali:~# nmap
+A: -O
+
+	Host Discovery
+How many hosts are online in the local network?
+
+
+root@kali:~#nmap -sn 192.168.6.128/26
+A: 5
+
+	Port Scanning
+What is the IP address of the host running SNMP?
+
+root@kali:~#nmap -sU 192.168.6.128/26 -p 161
+A: 192.168.6.145
+
+What is the IP address of the host running redis?
+
+   looked up redis port on google
+root@kali:~#nmap 192.168.6.128/26 -p 6379
+A: 192.168.6.183
+
+	Service and Version Detections
+root@kali:~#nmap -sV 192.168.6.128/26 -p-
+
+What is the version of the running nginx web server?
+A: 1.19.5
+
+Which port is the FTP server listening on?
+A: 2245
+
+	NSE Scripts
+
+What is the password for redis?
+
+root@kali:~#nmap --script=redis-brute -p 6379 192.168.6.183
+A: toledo
