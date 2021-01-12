@@ -1,0 +1,70 @@
+Suricata : YARA Introduction
+platform: Rangeforce
+
+Scenario: One day you receive a suspicious email from a "John Smith" with attached files in it. You hesitate to open those files. Fortunately, a friend of yours, who 
+does security research, has volunteered to help you out a bit. He states that obviously, these attachments are not meant for opening and execution. He also sends you 
+a file with a *.yar file extension and says you can use this to check if the files are malicious. Unfortunately, that is all he had time for as he had some urgent 
+business to attend to.
+
+With some quick research you find out that this file can be used with a tool called Yara. You can read and edit the content of the rule file, but without Yara, 
+it is no use, so you decide to install it and test it out.
+
+1. Install and Compile YARA
+        Update and download dependencies
+student@desktop:~$ sudo apt update
+student@desktop:~$ sudo apt-get install automake libtool make gcc pkg-config autoconf libssl-dev libmagic-dev
+student@desktop:~$ chmod 755 yara-4.0.2.tar.gz 
+student@desktop:~$ tar -zxf yara-4.0.2.tar.gz
+student@desktop:~$ cd yara-4.0.2
+student@desktop:~/yara-4.0.2$./bootstrap.sh
+student@desktop:~/yara-4.0.2$./configure --with-crypto --enable-magic
+student@desktop:~/yara-4.0.2$make
+student@desktop:~/yara-4.0.2$sudo make install
+student@desktop:~/yara-4.0.2$sudo ldconfig
+student@desktop:~/yara-4.0.2$ make check
+         All Passed
+
+2.Yara Rule
+
+         Make a yara rule python script
+student@desktop:~/yara-4.0.2$ which python
+{your python}
+student@desktop:~/yara-4.0.2$ vi my_first_rule.yar
+
+rule dummy
+{
+        condition: true
+        }
+
+
+student@desktop:~/yara-4.0.2$ yara my_first_rule.yar my_first_rule.yar
+
+What is the output after executing the dummy rule on itself?
+dummy my_first_rule.yar
+
+
+3. Yara Options
+
+student@desktop:~/yara-4.0.2$ cd /home/student/Downloads/attachments
+        -m is metadata
+student@desktop:~/Downloads/attachments$ yara -m yara.yar /home/student/Downloads/attachments/one.pdf
+one [description="one.pdf",hash1="d55aa45223606db795d29ab9e341c1c703e5a2e26bd98402779f52b6c2e9da2b"] /home/student/Downloads/attachments/one.pdf
+
+What is the hash value of the one.pdf sample?
+d55aa45223606db795d29ab9e341c1c703e5a2e26bd98402779f52b6c2e9da2b
+
+4. Strings Analysis
+	-s print matching strings (hexadecimal virtual address:$string identifier:string value)
+
+student@desktop:~/Downloads/attachments$ yara -s yara.yar two.exe
+two two.exe
+0x2f38:$x1: C:\Windows\system32\msvbvm60.dll\3
+0xe360:$s2: C\x001\x00r\x00r\x00u\x00s\x00 \x00C\x00o\x00r\x00p\x001\x00.\x00c\x00o\x00m\x00
+0x37d4:$s3: C:\Windows\system32\MSCOMCTL.oca
+0x1af2:$s4: @\x00*\x00\\x00A\x00C\x00:\x00\\x00Z\x00A\x001\x00N\x00\\x00Z\x00a\x001\x00n\x00\\x00N\x00u\x00c\x00l\x00e\x00o\x00\\x00T\x00o\x00r\x00r\x00e\x00n\x00t\x00\\x00i
+\x00T\x00u\x00n\x00e\x00s\x00\\x00F\x00a\x00n\x00t\x00a\x00s\x00t\x00i\x00c\x00.\x00v\x00b\x00p\x00
+0x137ee:$s5: kernel32.dol
+
+
+For sample two.exe, what is the value of the string at the address 0x137ee?
+kernel32.dol
