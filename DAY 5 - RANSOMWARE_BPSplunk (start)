@@ -1,0 +1,26 @@
+RANSOMWARE
+Platform: TryHackME  BPSplunk
+=========================================================================================================================
+In this scenario, one of your users is greeted by this image on a Windows desktop that is claiming that files on the system have been encrypted and payment must be made to get the files back. It appears that a machine has been infected with Cerber ransomware at Wayne Enterprises and your goal is to investigate the ransomware with an eye towards reconstructing the attack. To learn more about Cerber, scroll to the bottom of the page.
+=========================================================================================================================
+1. What was the most likely IP address of we8105desk on 24AUG2016?
+set date/time range of 8/24/16 00:00:01 - 8/24/16 23:59:59
+	index=botsv1 we8105desk 
+ clicked on "we8105desk.waynecorpinc.local" in the "src" field
+ clicked on "src_ip" field and 1 ip listed (192.168.250.100)
+
+A: 192.168.250.100
+=========================================================================================================================
+2. What is the name of the USB key inserted by Bob Smith?
+After some online Reasearch, I found that the is Registry key with the name "USBSTOR" in "HKEY_LOCAL_MACHINE" that keeps track of all the USBs plugged into a computer in a key named "friendly name" and the data is the name of the USB
+so I make a table for the key_path and data from the search for the computer and "friendlyname"
+
+	index=botsv1 host=we8105desk  friendlyname 
+        | table key_path data 
+
+Two events come up, one is the path that i found in my research with the name "MIRANDA_PRI"
+ 
+A. MIRANDA_PRI
+========================================================================================================================= 
+
+STOPPING TO SLEEP
