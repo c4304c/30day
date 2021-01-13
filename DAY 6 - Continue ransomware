@@ -1,0 +1,153 @@
+I had copmpleted the Rasnomware activity on TryHackME: BPSplunk room.  Here it is.
+
+RANSOMWARE
+Platform: TryHackME  BPSplunk
+=========================================================================================================================
+In this scenario, one of your users is greeted by this image on a Windows desktop that is claiming that files on the system have been encrypted and payment must be made to get 
+the files back. It appears that a machine has been infected with Cerber ransomware at Wayne Enterprises and your goal is to investigate the ransomware with an eye towards 
+reconstructing the attack. To learn more about Cerber, scroll to the bottom of the page.
+=========================================================================================================================
+1. What was the most likely IP address of we8105desk on 24AUG2016?
+
+set date/time range of 8/24/16 00:00:01 - 8/24/16 23:59:59
+	index=botsv1 we8105desk 
+ clicked on "we8105desk.waynecorpinc.local" in the "src" field
+ clicked on "src_ip" field and 1 ip listed (192.168.250.100)
+
+A: 192.168.250.100
+=========================================================================================================================
+2. What is the name of the USB key inserted by Bob Smith?
+
+After some online Reasearch, I found that the is Registry key with the name "USBSTOR" in "HKEY_LOCAL_MACHINE" that keeps track of all the USBs plugged into a computer in
+a key named "friendly name" and the data is the name of the USB
+so I make a table for the key_path and data from the search for the computer and "friendlyname"
+
+	index=botsv1 host=we8105desk  friendlyname 
+        | table key_path data 
+
+Two events come up, one is the path that i found in my research with the name "MIRANDA_PRI"
+ 
+A. MIRANDA_PRI
+========================================================================================================================= 
+3. After the USB insertion, a file execution occurs that is the initial Cerber infection. This file execution creates two additional processes. What is the name of the file?
+
+We know it was a flash drive, so lets take a look at Directories that occured that day.
+
+	index=botsv1 host=we8105desk 
+	|  stats count by CurrentDirectory
+
+Most the stuff is in C drive but there are some D drive events
+
+	index=botsv1 host=we8105desk CurrentDirectory="D:\\Work Stuff\\013\\" OR "D:\\"
+
+The "prrocess" filed has 8 values, so easy to look at and 2 of them have D drive in them, one that ran a pdf and on that ran a dotm 
+ 	
+   "C:\Program Files (x86)\Microsoft Office\Office14\WINWORD.EXE" /n /f "D:\Miranda_Tate_unveiled.dotm"
+   "C:\Windows\system32\rundll32.exe" C:\Windows\system32\shell32.dll,OpenAs_RunDLL D:\Work Stuff\013\013366.pdf
+
+A: Miranda_Tate_unveiled.dotm
+=========================================================================================================================
+4. During the initial Cerber infection a VB script is run. The entire script from this execution, pre-pended by the name of the launching .exe, can be found in a field 
+in Splunk. What is the length in characters of this field?
+
+From
+	index=botsv1 host=we8105desk CurrentDirectory="D:\\Work Stuff\\013\\" OR "D:\\"	
+There was only one process that started with a 'cmd.exe' so I click that and add the following to the search:
+	
+	| eval length=len(process) 
+        | table length	
+
+A: 4490
+=========================================================================================================================
+5. Bob Smith's workstation (we8105desk) was connected to a file server during the ransomware outbreak. What is the IP address of the file server?
+
+	index=botsv1 host=we8105desk fileshare
+"key_path" has one IP indicating as a fileshare that day
+
+A:192.168.250.20
+=========================================================================================================================
+6. What was the first suspicious domain visited by we8105desk on 24AUG2016?
+
+I have gotten a table of his DNS Record A lookups by time
+
+	index=botsv1 src=192.168.250.100 sourcetype=stream:DNS record_type=A
+	| table _time query{} 
+	|  reverse
+
+I see local, wpad, microsoft, than I see an odd one at 2016-08-24 16:48:12.267	
+
+A: solidaritedeproximite.org
+=========================================================================================================================
+7. The malware downloads a file that contains the Cerber ransomware cryptor code. What is the name of that file?
+
+I run a stats count for the URLs and find an odd file from solidaritedeproximite.org.
+
+	index=botsv1 src=192.168.250.100 sourcetype="stream:http"  
+	| stats count by url
+
+A: mhtr.jpg
+=========================================================================================================================
+8. What is the parent process ID of 121214.tmp?
+
+	index=botsv1 121214.tmp
+	| table CommandLine, ProcessId,ParentProcessId
+	| where CommandLine!= ""
+
+the shows the cmd.exe to start 121214.tmp ProcessId 1476 and ParentProcessId
+
+A: 3968
+=========================================================================================================================
+9. Amongst the Suricata signatures that detected the Cerber malware, which signature ID alerted the fewest number of times?
+
+I am going to search Suricata for 'cerber' and sort the alrts and signatures
+
+	index=botsv1 sourcetype=suricata cerber 
+	| stats count by alert.signature, alert.signature_id 
+	| sort -count
+
+A: 2816763
+=========================================================================================================================
+10. The Cerber ransomware encrypts files located in Bob Smith's Windows profile. How many .txt files does it encrypt?
+
+First thing I did was lookup what Event codes are and how many there were for any text file. of the 2 options(1 or 2), It seems likely that the eventID during encruption
+would be 2.
+
+Event ID 1: Process creation
+The process creation event provides extended information about a newly created process. The full command line provides context on the process execution. The ProcessGUID 
+field is a unique value for this process across a domain to make event correlation easier. The hash is a full hash of the file with the algorithms in the HashType field.
+
+Event ID 2: A process changed a file creation time
+The change file creation time event is registered when a file creation time is explicitly modified by a process. This event helps tracking the real creation time of a file. 
+Attackers may change the file creation time of a backdoor to make it look like it was installed with the operating system. Note that many processes legitimately change the 
+creation time of a file; it does not necessarily indicate malicious activity.
+
+	index=botsv1 host=we8105desk *txt 
+	| stats count by EventCode, EventDescription
+
+So now I add in Bob's file path and the event ID in the search
+
+	index=botsv1 host=we8105desk *txt file_path="C:\\Users\\bob.smith.WAYNECORPINC\\*" EventID=2
+	| stats count
+
+A:406
+=========================================================================================================================
+11. How many distinct PDFs did the ransomware encrypt on the remote file server?
+
+First, I need to find the host of the fileshare.  So I search the FIleshare IP and Bob's Hostname.
+
+	index=botsv1 192.168.250.20 host=we8105desk
+In 'dest' it has the only other options for a host (we9041srv)
+
+So I will search PDFs at that host from the IP Bob's host had and get a count (removing duplicates) of the name of the file (Relative_Target_Name)
+
+	index=botsv1 host=we9041srv pdf Source_Address="192.168.250.100"
+	| stats dc(Relative_Target_Name)
+
+A: 257 
+=========================================================================================================================================
+12. What fully qualified domain name (FQDN) does the Cerber ransomware attempt to direct the user to at the end of its encryption phase?
+
+I am going to re-do my command from number 6 and look for another odd one after the first that might be the answer.
+at 2016-08-24 17:15:12.668  cerberhhyed5frqa.xmfir0.win shows up.
+
+A: cerberhhyed5frqa.xmfir0.win
