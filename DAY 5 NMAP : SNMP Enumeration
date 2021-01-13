@@ -1,0 +1,32 @@
+Day 5 
+
+NMAP : SNMP Enumeration
+Platform: Rangeforce
+The server's IP address is 192.168.6.2 with SNMP running on default UDP port 161
+
+	Introduction
+root@desktop:~# nmap -sU --script=snmp-info -p 161 192.168.6.2
+
+	Brute-force community string
+root@desktop:~# nmap -sU --script snmp-brute 192.168.6.2
+
+   What's the read-write community string?
+   TENmanUFactOryPOWER
+
+	Enumerate network interfaces
+root@desktop:~# nmap -sU --script snmp-interfaces -p 161 192.168.6.2
+
+   Which IP address is assigned to the veth1 interface?
+   10.77.94.1
+
+	Enumerate network connections
+root@desktop:~# nmap -sU --script snmp-netstat -p 161 192.168.6.2
+
+   Which port is open on the IP address of the veth1 interface?
+   9728
+
+	Enumerate processes
+root@desktop:~# nmap -sU --script snmp-processes --script-args creds.snmp=TENmanUFactOryPOWER -p 161 192.168.6.2
+   
+   What is the leaked password?
+   MWFkN2M3MDliMDk4
