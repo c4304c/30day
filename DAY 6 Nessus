@@ -1,0 +1,32 @@
+I started a Nessus lab on TryHackMe
+
+Downloaded nessus on a Kali VM
+
+
+	Start Nessus
+chris@chris:~$sudo /bin/systemctl start nessusd.service
+
+go to https://localhost:8834/
+
+TASK 3: 
+
+What is the name of the button which is used to launch a scan?
+New Scan
+
+What side menu option allows us to create custom templates?
+policies
+
+What menu allows us to change plugin properties such as hiding them or changing their severity?
+plugin rules
+
+In the 'Scan Templates' section after clicking on 'New Scan', what scan allows us to see simply what hosts are alive?
+host discovery
+
+One of the most useful scan types, which is considered to be 'suitable for any host'?
+basic network scan
+
+What scan allows you to 'Authenticate to hosts and enumerate missing updates'?
+credential patch audit
+
+What scan is specifically used for scanning Web Applications? 
+web application tests
