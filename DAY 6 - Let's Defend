@@ -1,0 +1,32 @@
+I started to play Let's Defend. This is a SOC Simulation where you work alerts.
+===================================================================================================================
+1st alert:
+
+Medium	Jan. 2, 2021, 3:39 p.m.	SOC101 - Phishing Mail Detected	41	Exchange	
+
+The email had a malicious attachment,  The MD5 of the attachment was reported as a trojan by arcabit. 
+
+The case was closed as a True Positive.
+===================================================================================================================
+2nd alert:
+High	Jan. 2, 2021, 4:33 a.m.	SOC110 - Proxy - Cryptojacking Detected	40	Proxy
+
+What is the source IP address?
+172.16.17.47
+What is the destination URL address?
+https://bit.ly/3hNuByx
+What is User Agent?
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) 
+
+LOG:
+Request URL: https://bit.ly/3hNuByx
+
+Request Method: GET
+Device Action: Allowed
+Process: chrome.exe
+Parent Process: explorer.exe
+Parent Process MD5: 8b88ebbb05a0e56b7dcc708498c02b3e
+
+Virustotal showed the URL and the MD5 clean
+
+This was closed as a false positive
