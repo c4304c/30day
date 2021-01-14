@@ -1,0 +1,29 @@
+Day 7
+
+3rd Alert:
+
+EventID: 37
+Event Time:  Jan. 1, 2021, 6:11 p.m.
+Rule:  SOC103 - Malicious APK Detected
+Source Address:  10.15.15.47
+Source Hostname:  LelePhone
+Username:  Lele
+Package Name:  com.makinggames.worldtv
+Device Action:  Allowed
+
+no logs for this alert
+
+looked up "com.makinggames.worldtv" in koodous and saw 4
+
+the one in this alert was 5.0mb
+
+only one was that size
+md5 = 62f4ffd514c3b4dc9fb77cdedbc0ae3168774236240039b2b2c922c872cc4e09
+
+virustotal - 24 engines detect as adware
+
+I went to request containment but it was not on the list (phone name or IP)
+
+=====================================================================================================================
+
+only 3 alerts are free
