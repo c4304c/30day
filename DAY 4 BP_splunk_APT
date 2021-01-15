@@ -207,10 +207,9 @@ I entered  prankglassinebracket.jumpingcrab.com into threatcrowd and many domain
 Based on the data gathered from this attack and common open source intelligence sources for domain names, what is the email address that is most likely associated with 
 P01s0n1vy APT group?
 
-This one I had to lookup a walktrhough of i since the OSINT tool that I used shows it is register to Domains By Proxy, LLC
-and the email on that registration  did not match with the correct answer. 
+I found it by looking up WAYNECORINC.COM on threatcrowd.
 
-17.lillian.po1son1vy.com
+17.lillian.rose@po1s0n1vy.com
 =======================================================================
 GCPD reported that common TTPs (Tactics, Techniques, Procedures) for the P01s0n1vy APT group if initial compromise fails is to send a spear phishing email with custom malware 
 attached to their intended target. This malware is usually connected to P01s0n1vy’s initial attack infrastructure. Using research techniques, provide the SHA256 hash of this 
