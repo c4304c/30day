@@ -1,0 +1,112 @@
+Day 7
+Boss Of The SOC v2 - SIEM Case Investigation
+Platform : https://cyberdefenders.org/
+
+I skipped v1 since it looks the same as the one that I did for tryhackme.
+
+In this hands-on exercise, you assume the persona of Alice Bluebird, the analyst who successfully assisted Wayne Enterprises and was recommended to Grace Hoppy at Frothly to assist them with their recent issues.
+
+Hunting Scenarios:
+
+PowerShell: Adversaries will use PowerShell Empire to establish a foothold and carry out attacks.
+Exfiltration Over Alternative Protocol - FTP: Data Exfiltration may occur using common network protocols, principally FTP
+Exfiltration Over Alternative Protocol - DNS: Data Exfiltration may occur using common network protocols, specifically DNS
+Adversary Infrastructure: The adversary has established multiple components of infrastructure beyond what we have already uncovered.
+Spearphishing Attachment: Adversaries will attempt to establish a foothold within Froth.ly using Phishing.
+User Execution: Adversaries will attempt to establish a foothold within Froth.ly by enticing a user to execute an action on a file.
+Persistence - Create Account: An adversary will look to maintain persistence across an enterprise by creating user accounts.
+Persistence - Scheduled Task: An adversary will look to maintain persistence across reboots by using a task scheduler.
+Indicator Removal On Host: Clearing of audit / event logs could indicate an adversary attempting to cover their tracks.
+Reconaissance: User Agent Strings may provide insight into an adversary that they may not have intended to show.
+OSINT: Identifying publicly available company information and who is accessing it may provide insight into the adversary.
+Lateral Movement: Adversaries will look to move laterally to other systems using Windows Management Instrumentation (WMI).
+Data Staging: Adversaries will stage data prior to exfiltration to make it easier to extract data at a time of their choosing as well as have a central place to place information as it is identified.
+
+==============================================================================================================================
+bots2.ova file was downloaded and used 
+
+===============================================================================================================================	
+1	This is a simple question to get you familiar with submitting answers. What is the name of the company that makes the software that you are using for this competition? Answer guidance: A six-letter word with no punctuation.
+A: Splunk
+===============================================================================================================================	
+2. Amber Turing was hoping for Frothly to be acquired by a potential competitor which fell through, but visited their website to find contact information for their executive team. What is the website domain that she visited? Answer guidance: Do not provide the FQDN. Answer example: google.com
+
+First thing I did was search for a user with "amber" in the name
+
+	user=*amber*
+
+I noticed that 10.0.2.101 has the bulk (83%) of src_ip and is the only client_IP, so I'll try that with a sourcetype of http:stream.  Since she was looking for a competeitor's website. It would be a .com so I add that in the search as well.
+
+	src_ip="10.0.2.101" sourcetype="stream:http" site=*.com
+
+77 sites, I glanced through quickly and see 2 potential answer (berkbeer.com and finnegan.com).
+Both are just image links but Berk Beer does have ceoberk.png and may have info on the executive team
+
+A: berkbeer.com
+===============================================================================================================================	
+3. Amber found the executive contact information and sent him an email. What is the CEO's name? Provide the first and last name.
+
+I searched berkbeer from sourcetype="stream:smtp
+
+	sourcetype="stream:smtp" berkbeer
+
+2 berkbeer emails showed up (hbernhard@berkbeer.com and mberk@berkbeer.com).
+
+I searched the earliest email with the content_transfer_encoding printable and the first was this:
+
+Mr. Bernhard,
+   I was very sorry to hear about the acquisition falling through. I was ve=
+ry excited to work with you in the future. I have to admit, I am a little w=
+orried about my future here. I'd love to talk to you about some information=
+ I have regarding my work.
+
+Amber Turing
+Principal Scientist
+867.322.1123
+Froth.ly
+	
+	sourcetype="stream:smtp" berkbeer "content_transfer_encoding{}"="quoted-printable" 
+	|  reverse
+	
+His response gave his last name in the email
+A: Martin Berk
+===============================================================================================================================	
+4. After the initial contact with the CEO, Amber contacted another employee at this competitor. What is that employee's email address?
+
+this was found in my research for the last question.
+
+A: hbernhard@berkbeer.com
+===============================================================================================================================	
+5. What is the name of the file attachment that Amber sent to a contact at the competitor?
+
+I brought up all the berkbeer emails again and found 1 file in attach_filename" field
+	
+	sourcetype="stream:smtp" berkbeer
+
+A: Saccharomyces_cerevisiae_patent.docx
+===============================================================================================================================	
+6. What is Amber's personal email address?	
+
+Since the 3 emails that I could read did not have her email,  I checked the encoded one and found her email in the meassage when I decoded with base64decode.org
+
+A: ambersthebest@yeastiebeastie.com
+===============================================================================================================================	
+7. What version of TOR did Amber install to obfuscate her web browsing? Answer guidance: Numeric with one or more delimiter.
+
+Knowing that its installed one time than used, I simply searched tor.exe
+
+	tor.exe
+
+I then looked at the process_name field and there it was
+
+	
+A:7.0.4
+===============================================================================================================================	
+8. What is the public IPv4 address of the server running www.brewertalk.com?
+This one is an easy search
+
+	dest="www.brewertalk.com"
+
+Now I take a look at dest_ip and 2 are there but 1 is private, 
+	
+A:52.42.208.228
