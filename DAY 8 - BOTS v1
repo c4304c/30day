@@ -1,0 +1,349 @@
+Splunk BOTS v1
+
+1	This is a simple question to get you familiar with submitting answers. What is the name of the company that makes the software that you are using for this competition? Just a six-letter word with no punctuation.	
+=============
+A: splunk
+=====================================================================================================================
+2	What is the likely IP address of someone from the Po1s0n1vy group scanning imreallynotbatman.com for web application vulnerabilities?		
+=============
+	index=botsv1 imreallynotbatman.com  
+click sourcetypes field  to get to find the sourcetypes
+click src field to get ips
+
+add sourcetype=stream:http to search to see what the data that is being seen over the wire
+	index=botsv1 imreallynotbatman.com sourcetype=stream:http
+94.432% seems interesting
+
+VALIDATE THE IP SCANNING YOU:
+
+Change sourcetype to suricata and IP investigating, from here we can view signitures 	
+	index=botsv1 imreallynotbatman.com src=40.80.148.42 sourcetype=suricata
+there are a lot of possible attack coming from that src IP
+
+A. 40.80.148.42
+=====================================================================================================================
+3	What company created the web vulnerability scanner used by Po1s0n1vy? Type the company name. (For example "Microsoft" or "Oracle")		
+=============
+go back to the http stream and look at the source header from that IP
+	index=botsv1 src=40.80.148.42 sourcetype=stream:http
+we find the scanner in the header
+
+A. Acunetix 
+=====================================================================================================================
+4	What content management system is imreallynotbatman.com likely using?(Please do not include punctuation such as . , ! ? in your answer. We are looking for alpha characters only.)		
+=============
+add the dest ip in search and look at the URI to find the files, most are in joomla directory
+	index=botsv1 src=40.80.148.42 dest=192.168.250.70 sourcetype=stream:http
+
+4. joomla
+=====================================================================================================================
+5	What is the name of the file that defaced the imreallynotbatman.com website? Please submit only the name of the file with extension (For example "notepad.exe" or "favicon.ico").		
+=============
+Time to use suricata to see if it anything going to server.
+	index=botsv1 sourcetype=suricata dest="192.168.250.70"
+
+Just internal sources,
+we verified there was an attack on this server though, so lets see if it was from the inside
+	index=botsv1 sourcetype=suricata src="192.168.250.70"
+
+
+3 external IP dest (2 of which are the ones we identified),
+make the investigate a bit more narrow
+	index=botsv1 sourcetype=suricata src="192.168.250.70" dest_ip ="40.80.148.42" OR "23.22.63.114"
+
+Created a tabel to show me the URL and hostname
+	index=botsv1 sourcetype=suricata src="192.168.250.70" dest_ip ="40.80.148.42" OR "23.22.63.114" 
+| table http.hostname, http.url 
+
+alot of normal files come up from 71.39.18.126 and imreallynotbatman.com,
+Since this seems like it is an external attack I re-ran that table exluding those 2 hostnames
+
+	index=botsv1 sourcetype=suricata src="192.168.250.70" dest_ip ="40.80.148.42" OR "23.22.63.114" 
+| table http.hostname, http.url 
+| search http.hostname!=  71.39.18.126 
+| search http.hostname!= "imreallynotbatman.com"
+
+questionable JPEG from prankglassinebracket.jumpingcrab.com
+ 
+This is verified as a malicous website with the firewall
+	index=botsv1 sourcetype=fgt_utm src="192.168.250.70" category="Malicious Websites"
+
+A. poisonivy-is-coming-for-you-batman.jpeg
+=====================================================================================================================
+6	This attack used dynamic DNS to resolve to the malicious IP. What fully qualified domain name (FQDN) is associated with this attack?		
+=============
+I came accross this answer in question 14
+A. prankglassinebracket.jumpingcrab.com
+=====================================================================================================================
+7	What IP address has Po1s0n1vy tied to domains that are pre-staged to attack Wayne Enterprises?	
+=============
+Time for some OSINT with threatcrowd.org
+I entered  prankglassinebracket.jumpingcrab.com into threatcrowd and many domains similar to 
+
+A. 23.22.63.114
+=====================================================================================================================
+8	Based on the data gathered from this attack and common open source intelligence sources for domain names, what is the email address that is most likely associated with Po1s0n1vy APT group?		
+=============
+I found it by looking up WAYNECORINC.COM on threatcrowd.
+
+A.lillian.rose@po1s0n1vy.com
+=====================================================================================================================
+9	What IP address is likely attempting a brute force password attack against imreallynotbatman.com?		
+=============
+look at the http stream and check source IPs going  to out server's IP 
+	index=botsv1 sourcetype=stream:http dest="192.168.250.70"
+2 ips external IPs show: 40.80.148.42 and 23.22.63.114
+added each one to the search string and looked at the form data(1st was src="40.80.148.42")
+Nothing interesting to detect a brute force
+src="23.22.63.114" form data had many attempts with different passwords for admin
+
+A. 23.22.63.114
+=====================================================================================================================
+10	What is the name of the executable uploaded by Po1s0n1vy? Please include file extension. (For example, "notepad.exe" or "favicon.ico")		
+=============
+we know the 2 IPs that logged in and the server IP 
+so we look that up and search for executables
+
+	index=botsv1 sourcetype=stream:http src="40.80.148.42" OR "23.22.63.114" dest="192.168.250.70" *.exe
+
+we find a php file and and exe file in the part_filename{} field
+
+A. 3791.exe
+=====================================================================================================================
+11	What is the MD5 hash of the executable uploaded?		
+=============
+look up the execubale and see what sourceypes it shows up in
+	index=botsv1 3791.exe
+from here we see a syslog files, they would have the hash info... click it
+
+this exe was most likely run, so in click on process created.
+I find 3791.exe in the joomla directory under the app field.
+I took a look at Process_create (1)
+I clicked that and there is 1 event with a MD5. 
+
+
+A. AAE3F5A29935E6ABCC2C2754D12A9AF0
+=====================================================================================================================
+12	GCPD reported that common TTPs (Tactics, Techniques, Procedures) for the Po1s0n1vy APT group, if initial compromise fails, is to send a spear phishing email with custom malware attached to their intended target. This malware is usually connected to Po1s0n1vys initial attack infrastructure. Using research techniques, provide the SHA256 hash of this malware.	500	265	
+=============
+I have no email logs to look for spear phishing attacks so I will look up the IP in 
+threatminer.org
+
+I am shows 3 MD5's with 1 being detected as malware
+
+A. 9709473ab351387aab9e816eff3910b9f28a7a70202e250ed46dba8f820f34a8
+=====================================================================================================================
+13	What special hex code is associated with the customized malware discussed in question 12? (Hint: It's not in Splunk)		
+=============
+someone in the community section posted the hex associated with it
+
+A. 53 74 65 76 65 20 42 72 61 6e 74 27 73 20 42 65 61 72 64 20 69 73 20 61 20 70 6f 77 65 72 66 75 6c 20 74 68 69 6e 67 2e 20 46 69 6e 64 20 74 68 69 73 20 6d 65 73 73 61 67 65 20 61 6e 64 20 61 73 6b 20 68 69 6d 20 74 6f 20 62 75 79 20 79 6f 75 20 61 20 62 65 65 72 21 21 21
+=====================================================================================================================
+14	One of Po1s0n1vy's staged domains has some disjointed "unique" whois information. Concatenate the two codes together and submit as a single answer.	
+=============
+????????????????????????????????????????????????????????
+wayneorpinc.com x
+waynecorinc.com *
+waynecorpnc.com*
+wynecorpinc.com x
+waynecrpinc.com x
+wanecorpinc.com x
+wayncorpinc.com x
+
+2ba6dca082d8ab3e 11b8678a0839b5eas 3432650ec337c945 f1149f4337884abe 7669ff40aee11f69 f4cd1633f8ca6d79 3432650ec337c945 2921a166a7c483b0 3432650ec337c945 2ba6dca082d8ab3e 6e6524b7bb78a92b
+2b a6 dc a0 82 d8 ab 3e 11 b8 67 8a 08 39 b5 ea s3 43 26 50 ec 33 7c 94 5f 11 49 f4 33 78 84 ab e7 66 9f f4 0a ee 11 f6 9f 4c d1 63 3f 8c a6 d7 93 43 26 50 ec 33 7c 94 52 92 1a 16 6a 7c 48 3b 03 43 26 50 ec 33 7c 94 52 ba 6d ca 08 2d 8a b3 e6 e6 52 4b 7b b7 8a 92 b0
+
+
+
+A. 
+=====================================================================================================================
+15	What was the first brute force password used?	
+=============
+In one attack, I saw it was Post
+
+reverse the order and add POST method
+	index=botsv1 sourcetype=stream:http dest="192.168.250.70" src="23.22.63.114" 
+| reverse
+
+A. 12345678
+=====================================================================================================================
+16	One of the passwords in the brute force attack is James Brodsky's favorite Coldplay song. Hint: we are looking for a six character word on this one. Which is it?		
+=============
+A. yellow
+=====================================================================================================================
+17	What was the correct password for admin access to the content management system running "imreallynotbatman.com"?		
+=============
+we know of at least 1 other external IP had communication with that server (40.80.148.42)
+So I used Regex again to pull the password used and check if there was 1 used by both IPs
+
+	index=botsv1 sourcetype=stream:http form_data=*username*passwd* 
+dest_ip=192.168.250.70 | rex field=form_data "passwd=(?<userpassword>\w+)" 
+| stats count by userpassword | sort - count
+
+"batman" was the only one with 2, looking at the events, 1 event from each of those 2 IPs.
+
+A. batman
+=====================================================================================================================
+18	What was the average password length used in the password brute forcing attempt? (Round to closest whole integer. For example "5" not "5.23213")		
+=============
+use regex to pull the passwords again and create a table
+
+get the password lengths and average them, than round them
+
+	index=botsv1 sourcetype=stream:http dest="192.168.250.70" src="23.22.63.114" http_method=POST 
+| rex field=form_data "passwd=(?<userpassword>\w+)" | table userpassword 
+| eval mylen=len(userpassword) 
+| stats avg(mylen) AS aver
+| eval averROUND=round(aver,0)
+
+
+A. 6
+=====================================================================================================================
+19	How many seconds elapsed between the time the brute force password scan identified the correct password and the compromised login? Round to 2 decimal places.		
+=============
+We know the password was batman, so we look when batman was used by creating a search and putting results in a table with the time and the source
+
+	index=botsv1 sourcetype=stream:http  | rex field=form_data "passwd=(?<userpassword>\w+)" | search userpassword=batman | table _time src
+
+pull out a calculater, subtract and round 
+1 min 32.169 sec = 92.169 secs, round = 92.17
+
+A. 92.17
+=====================================================================================================================
+20	How many unique passwords were attempted in the brute force attempt?		
+=============
+recreate the password table
+	index=botsv1 sourcetype=stream:http dest="192.168.250.70" src="23.22.63.114" http_method=POST 
+| rex field=form_data "passwd=(?<userpassword>\w+)" | table userpassword
+
+click on events and go to userpasswords field, no top values over 1, total events were 412
+
+A. 412
+=====================================================================================================================
+21	What was the most likely IP address of we8105desk on 24AUG2016?		
+=============
+set date/time range of 8/24/16 00:00:01 - 8/24/16 23:59:59
+	index=botsv1 we8105desk 
+ clicked on "we8105desk.waynecorpinc.local" in the "src" field
+ clicked on "src_ip" field and 1 ip listed (192.168.250.100)
+
+A: 192.168.250.100
+=====================================================================================================================
+22	Amongst the Suricata signatures that detected the Cerber malware, which one alerted the fewest number of times? Submit ONLY the signature ID value as the answer. (No punctuation, just 7 integers.)		
+=============
+I am going to search Suricata for 'cerber' and sort the alrts and signatures
+
+	index=botsv1 sourcetype=suricata cerber 
+	| stats count by alert.signature, alert.signature_id 
+	| sort -count
+
+A: 2816763
+=====================================================================================================================
+23	What fully qualified domain name (FQDN) does the Cerber ransomware attempt to direct the user to at the end of its encryption phase?		
+=============
+I am going to re-do my command from number 6 and look for another odd one after the first that might be the answer.
+at 2016-08-24 17:15:12.668  cerberhhyed5frqa.xmfir0.win shows up.
+
+A: cerberhhyed5frqa.xmfir0.win
+=====================================================================================================================
+24	What was the first suspicious domain visited by we8105desk on 24AUG2016?		
+=============
+I have gotten a table of his DNS Record A lookups by time
+
+	index=botsv1 src=192.168.250.100 sourcetype=stream:DNS record_type=A
+	| table _time query{} 
+	|  reverse
+
+I see local, wpad, microsoft, than I see an odd one at 2016-08-24 16:48:12.267	
+
+A: solidaritedeproximite.org
+=====================================================================================================================
+25	During the initial Cerber infection a VB script is run. The entire script from this execution, pre-pended by the name of the launching .exe, can be found in a field in Splunk. What is the length in characters of the value of this field?		
+=============
+	index=botsv1 host=we8105desk CurrentDirectory="D:\\Work Stuff\\013\\" OR "D:\\"	
+There was only one process that started with a 'cmd.exe' so I click that and add the following to the search:
+	
+	| eval length=len(process) 
+        | table length	
+
+A: 4490
+=====================================================================================================================
+26	What is the name of the USB key inserted by Bob Smith?		
+=============
+After some online Reasearch, I found that the is Registry key with the name "USBSTOR" in "HKEY_LOCAL_MACHINE" that keeps track of all the USBs plugged into a computer in a key named "friendly name" and the data is the name of the USB
+so I make a table for the key_path and data from the search for the computer and "friendlyname"
+
+	index=botsv1 host=we8105desk  friendlyname 
+        | table key_path data 
+
+Two events come up, one is the path that i found in my research with the name "MIRANDA_PRI"
+ 
+A. MIRANDA_PRI
+=====================================================================================================================
+27	Bob Smith's workstation (we8105desk) was connected to a file server during the ransomware outbreak. What is the IP address of the file server?		
+=============
+	index=botsv1 host=we8105desk fileshare
+"key_path" has one IP indicating as a fileshare that day
+
+A: 192.168.250.20
+=====================================================================================================================
+28	How many distinct PDFs did the ransomware encrypt on the remote file server?		
+=============
+
+First, I need to find the host of the fileshare.  So I search the FIleshare IP and Bob's Hostname.
+
+	index=botsv1 192.168.250.20 host=we8105desk
+In 'dest' it has the only other options for a host (we9041srv)
+
+So I will search PDFs at that host from the IP Bob's host had and get a count (removing duplicates) of the name of the file (Relative_Target_Name)
+
+	index=botsv1 host=we9041srv pdf Source_Address="192.168.250.100"
+	| stats dc(Relative_Target_Name)
+
+A: 257 
+=====================================================================================================================
+29	The VBscript found in question 25 launches 121214.tmp. What is the ParentProcessId of this initial launch?		
+=============
+	index=botsv1 121214.tmp
+	| table CommandLine, ProcessId,ParentProcessId
+	| where CommandLine!= ""
+
+the shows the cmd.exe to start 121214.tmp ProcessId 1476 and ParentProcessId
+
+A: 3968
+=====================================================================================================================
+30	The Cerber ransomware encrypts files located in Bob Smith's Windows profile. How many .txt files does it encrypt?		
+=============
+First thing I did was lookup what Event codes are and how many there were for any text file. of the 2 options(1 or 2), It seems likely that the eventID during encruption would be 2.
+
+Event ID 1: Process creation
+The process creation event provides extended information about a newly created process. The full command line provides context on the process execution. The ProcessGUID field is a unique value for this process across a domain to make event correlation easier. The hash is a full hash of the file with the algorithms in the HashType field.
+
+Event ID 2: A process changed a file creation time
+The change file creation time event is registered when a file creation time is explicitly modified by a process. This event helps tracking the real creation time of a file. Attackers may change the file creation time of a backdoor to make it look like it was installed with the operating system. Note that many processes legitimately change the creation time of a file; it does not necessarily indicate malicious activity.
+
+	index=botsv1 host=we8105desk *txt 
+	| stats count by EventCode, EventDescription
+
+So now I add in Bob's file path and the event ID in the search
+
+	index=botsv1 host=we8105desk *txt file_path="C:\\Users\\bob.smith.WAYNECORPINC\\*" EventID=2
+	| stats count
+
+A: 406
+=====================================================================================================================
+31	The malware downloads a file that contains the Cerber ransomware cryptor code. What is the name of that file?	
+=============
+I run a stats count for the URLs and find an odd file from solidaritedeproximite.org.
+
+	index=botsv1 src=192.168.250.100 sourcetype="stream:http"  
+	| stats count by url
+
+A: mhtr.jpg
+=====================================================================================================================
+32	Now that you know the name of the ransomware's encryptor file, what obfuscation technique does it likely use?
+=============
+A. Steganography
+
+This is the practice of hiding data (or code) in an ordinary file (ie. picture)
+=====================================================================================================================
