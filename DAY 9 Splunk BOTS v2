@@ -1,0 +1,42 @@
+12. What is Frank Ester's password salt value on www.brewertalk.com?	
+
+I developed a Regex to find what data was exfiltrated.
+I am now looking in attack data for frank.
+
+	src_ip "45.77.65.211" uri_path="/member.php" dest_ip="172.31.4.249" sourcetype="stream:http" eventtype=err0r  | rex field=dest_content "XPATH syntax error: ':(?P<attackdata>.+)'.+\R.+\R.+\R.+\R.+\R.+\R.+(SELECT )(?P<attacklabel>.+) F(.+)"
+	| stats count by attackdata
+	| where attackdata="frank"
+
+I will now add 5 seconds to the 1 event that I found and run it after removing the "where" statement.  I will create a table for timestamp, attacklabel and attackdata.
+
+src_ip "45.77.65.211" uri_path="/member.php" dest_ip="172.31.4.249" sourcetype="stream:http" eventtype=err0r  | rex field=dest_content "XPATH syntax error: ':(?P<attackdata>.+)'.+\R.+\R.+\R.+\R.+\R.+\R.+(SELECT )(?P<attacklabel>.+) F(.+)" | table timestamp attacklabel attackdata
+
+---------------
+A:gGsxysZL
+===============================================================================================================================	
+13. What is user btun's password on brewertalk.com?	
+So with this one, I will look for the substring and salt for btun.  I run Regex to get a table of the time, what type of data a exfiltrated and what it was.
+
+btun was exfiltrated at 2017-08-16T15:25:01.312344Z, so I will do a range  of 2017-08-16T15:25:01.312344Z -  2017-08-16T15:25:05.312344Z
+
+	src_ip "45.77.65.211" uri_path="/member.php" dest_ip="172.31.4.249" sourcetype="stream:http" eventtype=err0r 
+	| rex field=dest_content "XPATH syntax error: ':(?P<attackdata>.+)'.+\R.+\R.+\R.+\R.+\R.+\R.+(SELECT )(?P<attacklabel>.+) F(.+)"
+	| table timestamp attacklabel attackdata
+
+2017-08-16T15:25:04.212702Z	password	4
+2017-08-16T15:25:03.810694Z	password	f91904c1dd2723d5911eeba409cc0d1
+2017-08-16T15:25:03.412545Z	password	32
+2017-08-16T15:25:02.977892Z	salt	tlX7cQPE
+2017-08-16T15:25:02.567188Z	salt	8
+2017-08-16T15:25:02.146767Z	email	btun@froth.ly
+2017-08-16T15:25:01.714926Z	email	13
+2017-08-16T15:25:01.312344Z	username	btun
+
+It looks like "4" was cut off the password
+
+f91904c1dd2723d5911eeba409cc0d1 128 bit = MD5
+I have to bruteforce f91904c1dd2723d5911eeba409cc0d14
+
+NO list worked yet for me still trying
+---------------
+A:
