@@ -7,19 +7,18 @@ Platform: TryHAckMe
 
 What memory format is the most common?
 A.raw
-
+===============================
 The Window's system we're looking to perform memory forensics on was turned off by mistake. What file contains a compressed memory image?
 A. hiberfil.sys
-
+===============================
 	(not on quiz) if machine is on?
-A: FTK Imager
+A. FTK Imager
    Redline
    DumpIt.exe
    win32dd.exe / win64dd.exe
-
+===============================
 How about if we wanted to perform memory forensics on a VMware-based virtual machine?
-A .vmem
-
+A. .vmem
 =====================================================================================================================
 	Task 3  Examining Our Patient
 
@@ -172,12 +171,6 @@ module.584.24a0598.75b60000.dll  module.584.24a0598.7e410000.dll  process.0x8229
 module.584.24a0598.77dd0000.dll  module.584.24a0598.7e720000.dll  process.0x82298700.0x554c0000.dmp
 
 A: 12
-===============================
-
-
-
-
-
 =====================================================================================================================
 	Task 4  Post Actions
 
