@@ -110,22 +110,33 @@ ATT&CK Arsenal
 
 ============================
 	Task 7  ATT&CK® and Threat Intelligence
+	
+	
+	You are a security analyst who works in the aviation sector. Your organization is moving their infrastructure to the cloud. Your goal is to use the ATT&CK® Matrix to 
+gather threat intelligence on APT groups who might target this particular sector and use techniques affecting your areas of concern. You are checking to see if there are any 
+gaps in coverage. After selecting a group, look over the selected group's information and their tactics, techniques, etc. 
+
 
 What is a group that targets your sector who has been in operation since at least 2013?
 apt33
 
+==========================================
 Does this group use Stuxnet? (Yay/Nay)
 nay
 
+==========================================
 As your organization is migrating to the cloud, is there anything attributed to this APT group that you should focus on? If so, what is it?
 Cloud Accounts
 
+==========================================
 What tool is associated with this technique?
 ruler
 
+==========================================
 Per the detection tip, what should you be detecting?
 abnormal or malicious behavior
 
+==========================================
 What platforms does this affect?
 AWS, Azure, Azure AD, GCP, Office 365, SaaS
 
