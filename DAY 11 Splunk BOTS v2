@@ -1,0 +1,106 @@
+24. How many seconds elapsed between the time the ransomware executable was written to disk on MACLORY-AIR13 and the first local file encryption? Answer guidance: Use the index times (_time) instead of other timestamps in the events.	
+
+First I should find the executable that crypts the files. 
+I remember 3 torrents when I was looking up "Game Of Thrones" So I'll check them first.
+
+host="MACLORY-AIR13" torrent
+
+None of the hashed came up in virustotal (Checked MD5 and SHA256) 
+
+I will now do a reverse search for the crypto extension and see what occured before the first one.
+
+	host="MACLORY-AIR13" *.crypto* | search "columns.action"=CREATED | reverse 
+
+Encrytion started at 9:50:43.000 PM
+
+I set the time for 10 minutes before that encryption began and searched just the host.
+
+87979 events.  Let me look for any .exe
+
+0 events, after researching about .exe on macs, I found that "Mac OS X uses .DMG files and .APP files. .DMG is the compressed format of a program which may come as just a DMG or a DMG wrapped up in a .ZIP file."
+
+	host="MACLORY-AIR13" "*.app"OR".*DMG" | reverse
+
+93 events but only 2 values in "'columns.action'=CREATED"
+
+They belong to patcher.app (on downloading it - 9:48:31.000  and the next encyrypt it 9:50:43.000)
+
+I decide to look at them. at anything created in-between that time
+
+Only one other event (same time as the patcher.app download) comes up (target_path":"\/Users\/mallorykraeusen\/Downloads\/.BAH.rx5oJ) but no hashes to verify if it is malicious.
+
+everything else (.cyrpt and odd file names start getting created at 9:50.43.
+
+2 minutes and 13 seconds apart = 132 seconds
+ 
+---------------
+A: 132
+===============================================================================================================================	
+25. Kevin Lagerfield used a USB drive to move malware onto kutekitten, Mallory's personal MacBook. She ran the malware, which obfuscates itself during execution. Provide the vendor name of the USB drive Kevin likely used. Answer Guidance: Use time correlation to identify the USB drive.	
+
+First I want to lookup the host 
+
+host=kutekitten
+
+I than click on action field and see 3377 events. Alot but a starting point.
+
+I like looking at target path so I check columns.target_path and see 4 events thats all : /Users/mkraeusen/Downloads/Important_HR_INFO_for_mkraeusen
+I'll add that in the search.
+
+To see if this is anything, I grab the MD5 72d4d364ed91dd9418d144a2db837a6d and search virustotal.  It has 33 engines detected this file as a malicious PERL script.
+(1 md5 hash to grab and test)
+
+MD5	72d4d364ed91dd9418d144a2db837a6d
+SHA-1	794bcba867307bdbd5f947f6c939eb4df1d2c9b8
+SHA-256	befa9bfe488244c64db096522b4fad73fc01ea8c4cd0323f1cbdee81ba008271
+SSDEEP	384:xEWXD5fBirq/W2YyY8TbftcZWhtm1ITBcXtWloQXJ:xPBirq/WfAbqitukKXt+RJ
+File type	Perl
+Magic	a /usr/bin/perl script text executable
+TrID	Unix-like shebang (var.1) (gen) (63.6%)
+TrID	Perl script (36.3%)
+File size	13.18 KB (13494 bytes)
+
+This ended up happening on 8/3/17 at 6:19:07.000 PM
+
+So I set the search for 5 minutes prior and just search the host and "usb"
+Still 2 vendor ID's. Only 1 had 'mass stoage' as it's model
+
+058f - I searched this up in an online usb ID database at the-sz.com
+---------------
+A: alcor
+===============================================================================================================================	
+26. What programming language is at least part of the malware from the question above written in?	
+
+I came across this in my last question
+---------------
+A: PERL
+===============================================================================================================================	
+27. The malware from the two questions above appears as a specific process name in the process table when it is running. What is it?	
+
+I searched the cource type "osquery_results" since osquery was giving a lot of the logs for this part, and a perl file
+	sourcetype=osquery_results 
+
+Figured I would check the cmdline to see what ran.
+
+cmdline has java XPC_FLAGS=0x0
+
+---------------
+A: java
+===============================================================================================================================	
+28. The malware infecting kutekitten uses dynamic DNS destinations to communicate with two C&C servers shortly after installation. What is the fully-qualified domain name (FQDN) of the first (alphabetically) of these destinations?	
+
+VirusTotal shows it dectecting 2 different domains:
+
+eidk.duckdns.org 1/ 88
+eidk.hopto.org	2/87	
+
+to Verify I did the following search and they showed up.
+
+	sourcetype="stream:dns" eidk
+
+---------------
+A: eidk.duckdns.org
+===============================================================================================================================	
+29. From the question above, what is the fully-qualified domain name (FQDN) of the second (alphabetically) contacted C&C server?	
+---------------
+A: eidk.hopto.org
