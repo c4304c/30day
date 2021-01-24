@@ -1,0 +1,95 @@
+Day 16,  My time spent was working on a question that I am getting wrong on different ways I look at it and I am getting to tired to continue this question.  
+So I will leave it for a day I go over the questions that I missed.  But this is what I have.  A lot of regex done today and trying to figure out why it says wrong.
+Any help from anyone that did BOTSv2 would be appreciated.
+
+41. The Taedonggang group had several issues exfiltrating data. Determine how many bytes were successfully transferred in their final, mostly successful attempt to exfiltrate files via a method using TCP, using only the data available in Splunk logs. Use 1024 for byte conversion.	
+
+Since this was a TCP-exflitration,  I will look at FTP instead of DNS since the DNS exfiltration normally is UDP.
+
+	sourcetype="stream:ftp"
+
+1490 events.
+
+We are looking for last successful transmissions for I add "successful".
+
+	sourcetype="stream:ftp" *successful*.
+	
+1488 events. not much of a change.
+
+I look at one of the "File successfully transferred" events and see loadway="upload". so I add that.
+
+707 events, getting better.
+
+I looked at the most recent and clicked the flow-ID since all the events are single files.
+There could be many files in an attampt.
+flow_id	= Identifier of a Flow that is unique within an Observation Domain (https://docs.splunk.com/Documentation/StreamApp/7.3.0/DeployStreamApp/FlowProtocols)
+
+494 events
+
+	sourcetype="stream:ftp" *successful* loadway=Upload flow_id="f4703a87-9b70-43d1-af73-344db697a9bf"
+
+
+byte per second to second per megabyte = 1,048,576 (https://www.convert-me.com/en/convert/data_transfer_rate/byte_s.html?u=byte_s&v=1)
+byte per second to second per kilobyte = 1024 
+
+
+Now for some regex and creating a table (order by timestamp)
+
+	sourcetype="stream:ftp" *successful* loadway=Upload flow_id="f4703a87-9b70-43d1-af73-344db697a9bf"
+	| rex field=reply_content "(?P<duration>\d+.?\d+) sec.+, (?P<size>.+.?\d+)"
+	| table timestamp size duration
+
+There are 494 events. 
+Now some regex to get the total of all of the size (in bytes) from flow_id="f4703a87-9b70-43d1-af73-344db697a9bf"
+	
+	sourcetype="stream:ftp" *successful* loadway=Upload flow_id="f4703a87-9b70-43d1-af73-344db697a9bf"
+	| rex field=reply_content "(?P<duration>\d+.?\d+) sec.+, (?P<size>.+.?\d+) (?P<unit>\w+)bytes"
+	| eval unit_speed = case(unit == "M", 1048576, unit == "K", 1024) 
+	| eval total=duration*size*unit_speed
+	| stats sum(total)
+
+1395020741.07904 
+
+1395020741 and 1395020742 show wrong answer ???
+
+Maybe there are files that are not megabytes or kilobytes.
+
+	sourcetype="stream:ftp" *successful* loadway=Upload flow_id="f4703a87-9b70-43d1-af73-344db697a9bf"
+	| rex field=reply_content "(?P<duration>\d+.?\d+) sec.+, (?P<size>.+.?\d+) (?P<unit>\w+)bytes"
+	| eval unit_speed = case(unit == "M", 1048576, unit == "K", 1024) 
+	| eval total=duration*size*unit_speed
+	| stats count by unit
+
+K	47
+M	443
+total 490 but 494 events
+
+	sourcetype="stream:ftp" *successful* loadway=Upload flow_id="f4703a87-9b70-43d1-af73-344db697a9bf"
+	| rex field=reply_content "(?P<duration>\d+.?\d+) sec.+, (?P<size>.+.?\d+) (?P<unit>\w+)"
+	| table filename unit
+
+
+What events are missing?
+	sourcetype="stream:ftp" *successful* loadway=Upload flow_id="f4703a87-9b70-43d1-af73-344db697a9bf"
+	| rex field=reply_content "(?P<duration>\d+.?\d+) sec.+, (?P<size>.+.?\d+) (?P<unit>\w+)bytes"
+	| eval unit_speed = case(unit == "M", 1048576, unit == "K", 1024) 
+	| eval total=duration*size*unit_speed
+	| table filename unit
+
+the following filenames have no unit/transfer rate.
+
+Oktoberfest Ma��rzen WLP820.pdf	 
+Ko��lschbier ECY21.pdf	 
+Ko��lsch 2565.pdf	 
+German Ale Ko��lsch WLP029.pdf
+ 
+"Connecting to port <port number> File successfully transferred"
+
+I can't find the size of the files.
+
+I tried getting the excat time from response time and dividing it by 1000000 to get excat amount of seconds instead of rounded 
+(response_time: 528989  reply_content: .... 0.529 seconds (measured here), 442.15 Kbytes per second)
+
+but that didnt work either
+
+I am going to call it a night
