@@ -1,0 +1,191 @@
+I continued working on BOTS v2.  It may not seem like alot but for someone new to this and working through it  without a write-up,  I think I did pretty OK.  
+I feel like I am getting better.  Here is what I got doen today:
+
+
+42. Individual clicks made by a user when interacting with a website are associated with each other using session identifiers. You can find session identifiers in the 
+stream:http sourcetype. The Frothly store website session identifier is found in one of the stream:http fields and does not change throughout the user session.
+What session identifier is assigned to dberry398@mail.com when visiting the Frothly store for the very first time? Answer guidance: Provide the value of the field, 
+not the field name.	
+
+First I search the http stream and the email.
+	sourcetype="stream:http" dberry398@mail.com
+Only 2 events bot have src IP (74.130.56.117) and Dest IP (172.31.7.2).
+
+I will look in the cookie:
+
+store=default; mage-translation-storage=%7B%7D; mage-translation-file-version=%7B%7D; PHPSESSID=mlhg4l49hi8hn93b2abtr75j42; form_key=lwh9Ql7oUbnJUqxR; 
+mage-cache-storage=%7B%7D; mage-cache-storage-section-invalidation=%7B%7D; recently_viewed_product=%7B%7D; recently_viewed_product_previous=%7B%7D; 
+recently_compared_product=%7B%7D; recently_compared_product_previous=%7B%7D; product_data_storage=%7B%7D; mage-cache-sessid=true; mage-messages=; 
+private_content_version=becda8344cf560edfa267a78a663f962; X-Magento-Vary=9bf9a599123e6402b85cde67144717a08b817412; 
+section_data_ids=%7B%22cart%22%3A1502756249%2C%22customer%22%3A1502756125%2C%22compare-products%22%3A1502756125%2C%22product_data_storage%22%3A1502756125%2C%22last-
+ordered-items%22%3A1502756125%2C%22
+directory-data%22%3A1502756126%2C%22review%22%3A1502756125%2C%22wishlist%22%3A1502756125%2C%22recently_viewed_product%22%3A1502756125%2C%22
+recently_compared_product%22%3A1502756125%2C%22paypal-billing-agreement%22%3A1502756125%7D
+   
+I am interested in:
+PHPSESSID and form_key.
+
+Since there are only 2, I dont need regex to compare but I'll do it to get practice.
+
+Well Regex didn't work for me since the entries don't have the same format (PHPSESSION and form_key order). 
+So I will just look at the entries and see that the PHPSESSION changes, a session cookie (session identifier) won't.
+The "form-key doesnt change. 
+
+
+---------------
+A: lwh9Ql7oUbnJUqxR
+===============================================================================================================================	
+43. How many unique user ids are associated with a grand total order of $1000 or more?	
+
+First I need to find the "grand total". I have on up already so I will ctrl+f and look for total.
+This one has a "grand_total":"36.0000" in dest_content.
+This is in the evernt that had the url as "http://store.froth.ly/magento2/checkout/"
+
+Time for some Regex to pull that info out and no specific person:
+
+currency.+(?P<label>grand_total)\W+(?P<grandtotal>\w+\W\w+)
+
+Now keep in mind, this will give any order for 1000+ but what about dupilcates?
+
+sourcetype="stream:http" url="http://store.froth.ly/magento2/checkout/"
+| rex field=dest_content "(?P<label>grand_total)\W+(?P<GT>\w+\W\w+)"
+| rex field=cookie "form_key=(?P<SID>\w+)"
+| where GT>= 1000
+| stats count by SID
+ 
+Session IDs (form_key):
+0XnzRTpeOVy9HD1Z	1
+0w3UxbR9QnnI5OHw	1
+4wHUQN8O31Qt0Qth	2
+9opxLVZ5zgicn5kx	1
+QHHVI6brFPuLxVUk	1
+SqxyMqO5xJVNB865	1
+ZDd2VGcWWKcKM95o	1
+yjB8uDMr9vRpbibM        1
+
+Now we need to verify how many are different logins :
+I need to find the login page.
+They had to fill out a form.
+
+So I search the first part of the URL and what page might have from data.
+
+	sourcetype="stream:http" url=http://store.froth.ly*
+
+"form_data " is an option, but 100+ URLs, let's try to narrow it with "password"
+
+	sourcetype="stream:http" url=http://store.froth.ly* password
+
+19 urls, manageable, so I will click on the form data field
+They have form_key, Username and passord options.  
+I click one and get this URL "http://store.froth.ly/magento2/customer/account/loginPost/"
+
+Time for some more regex to pull out username and form_key
+
+	sourcetype="stream:http" uri_path="/magento2/customer/account/loginPost/"
+	| rex field="form_data" "form_key=(?P<SID>\w+).+(name]=)(?P<uname>.+)(&login)"
+	| stats count by SID uname
+
+Now I will ctrl+F the pages for the SIDs
+
+0XnzRTpeOVy9HD1Z	electron21@summitracing.com
+0w3UxbR9QnnI5OHw	protz23665@msn.com
+4wHUQN8O31Qt0Qth	aaron23@aol.com
+9opxLVZ5zgicn5kx	michael.jackson.phd@yahoo.com
+QHHVI6brFPuLxVUk	fritzmaytag@comcast.net
+SqxyMqO5xJVNB865	fritzmaytag@comcast.net
+ZDd2VGcWWKcKM95o	bkildcare@yandex.com
+yjB8uDMr9vRpbibM        go@outlook.com
+
+fritzmaytag@comcast.net has repeated SIDs
+
+
+I'm sure there must be an easier way that I will look for later, but now I'm glad I got the answer.
+--------------
+A: 7
+===============================================================================================================================	
+44. Which user, identified by their email address, edited their profile before placing an order over $1000 in the same clickstream? Answer guidance: Provide the user ID, 
+not other values found from the profile edit, such as name.	
+
+So edit is usually it's own page, So I will search edit in the URL (same way I did when looking for password, but I am looking at URL's not various fields content.
+
+	sourcetype="stream:http" uri_path=/magento2/customer/account/edit*
+
+Two URLs/URIs came up, one is edit and one editpost.
+
+I'll check "edit"
+
+2 events. Both belong to the SID: ZDd2VGcWWKcKM95o.
+
+bkildcare@yandex.com on the list above have that SID.
+
+
+---------------
+A: bkildcare@yandex.com
+===============================================================================================================================	
+45. What street address was used most often as the shipping address across multiple accounts, when the billing address does not match the shipping address? Answer example: 
+123 Sesame St	
+
+Not sure where to start, so I just started looking at the first part of the URL and looked through all the fields/
+	sourcetype="stream:http" url=http://store.froth.ly*
+
+After a bit, I found address listing in src_content (about 15 minutes):
+
+src_content	>100
+2.19%
+String
+ 	
+Reports
+Top values
+Top values by time
+Rare values
+Events with this field
+{"address":{"country_id":"US","postcode":null}}	143	10.874%	
+{"addressId":"73"}	3	0.228%	
+{"address":{"street":["414 Honey Blond Ave"],"city":"Chicago","region_id":"23","region":"Illinois","country_id":"US","postcode":"60007","firstname":"Dave","lastname":
+"Barry","company":"","telephone":"773-345-9825"}}	2	0.152%	
+form_key=0DLj1lTCwjHJuQAJ&login%5Busername%5D=duchamp@optonline.net&login%5Bpassword%5D=VabEG2Q~Zv!6%dUWsQH6&send=	1	0.076%	
+form_key=3aqhWCN0lkGtoLmC&login%5Busername%5D=nicktrig@live.com&login%5Bpassword%5D=VrJfrPxL4d#PTD86gDK&send=	1	0.076%	
+form_key=4f173BnBLyAxHdTS&login%5Busername%5D=isaacson@msn.com&login%5Bpassword%5D=79Q6LE2D4FeJHRCyGNb&send=	1	0.076%	
+form_key=9bGmiBYCta6gw307&login%5Busername%5D=symbolic@verizon.net&login%5Bpassword%5D=~!f8T4hTt2bTdLj9WvYX&send=	1	0.076%	
+form_key=DcQ7UX4wH2wwNFKN&login%5Busername%5D=vmalik@outlook.com&login%5Bpassword%5D=yDG6DcFP#g2fTtAxMBnX&send=	1	0.076%	
+form_key=ENmUAfOVUXrt2Je0&login%5Busername%5D=rtanter@yahoo.ca&login%5Bpassword%5D=n8FgxyNA~2dDchqMWQq9&send=	1	0.076%	
+form_key=GFcsLjqJ0QPgLCza&login%5Busername%5D=shrapnull@yahoo.ca&login%5Bpassword%5D=6pdX@3vJ6DFTyfrxE!UU&send=	1	0.076%	
+
+I checked "events in this field" and the first even had this info:
+
+
+{"addressInformation":
+
+{"shipping_address":
+{"countryId":"US",
+"regionId":"62",
+"regionCode":"WA",
+"region":"Washington",
+"street":["1654 Virginia Ave"],
+"company":"",
+"telephone":"206-548-9033",
+"postcode":"98101",
+"city":"Seattle",
+"firstname":"Sanaa",
+"lastname":"Arellano",
+"save_in_address_book":1},
+
+"billing_address":
+{"countryId":"US",
+"regionId":"62",
+"regionCode":"WA",
+"region":"Washington",
+"street":["1654 Virginia Ave"],
+"company":"",
+"telephone":"206-548-9033",
+"postcode":"98101",
+"city":"Seattle",
+"firstname":"Sanaa",
+"lastname":"Arellano",
+"save_in_address_book":1,
+"saveInAddressBook":null},
+"shipping_method_code":"flatrate","shipping_carrier_code":"flatrate"}}
+
+I am going to make some regex and compare shipping and billing addresses and bring stats for when they dont match.
+
+This will be alot of regex work and I need to call it a night.  I need to be fresh for all of this regex.
