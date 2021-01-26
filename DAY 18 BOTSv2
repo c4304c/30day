@@ -1,0 +1,80 @@
+I realized that I am ok with Regex, but today. I need to learn more about it.  So I will look for a regex training to add in to this plan:
+
+I was working on a toiugh regex question and got it partially done:
+
+45. What street address was used most often as the shipping address across multiple accounts, when the billing address does not match the shipping address? Answer example: 123 Sesame St	
+
+Not sure where to start, so I just started looking at the first part of the URL and looked through all the fields/
+	sourcetype="stream:http" url=http://store.froth.ly*
+
+After a bit, I found address listing in src_content (about 15 minutes):
+
+src_content	>100
+2.19%
+String
+ 	
+Reports
+Top values
+Top values by time
+Rare values
+Events with this field
+{"address":{"country_id":"US","postcode":null}}	143	10.874%	
+{"addressId":"73"}	3	0.228%	
+{"address":{"street":["414 Honey Blond Ave"],"city":"Chicago","region_id":"23","region":"Illinois","country_id":"US","postcode":"60007","firstname":"Dave","lastname":"Barry","company":"","telephone":"773-345-9825"}}	2	0.152%	
+form_key=0DLj1lTCwjHJuQAJ&login%5Busername%5D=duchamp@optonline.net&login%5Bpassword%5D=VabEG2Q~Zv!6%dUWsQH6&send=	1	0.076%	
+form_key=3aqhWCN0lkGtoLmC&login%5Busername%5D=nicktrig@live.com&login%5Bpassword%5D=VrJfrPxL4d#PTD86gDK&send=	1	0.076%	
+form_key=4f173BnBLyAxHdTS&login%5Busername%5D=isaacson@msn.com&login%5Bpassword%5D=79Q6LE2D4FeJHRCyGNb&send=	1	0.076%	
+form_key=9bGmiBYCta6gw307&login%5Busername%5D=symbolic@verizon.net&login%5Bpassword%5D=~!f8T4hTt2bTdLj9WvYX&send=	1	0.076%	
+form_key=DcQ7UX4wH2wwNFKN&login%5Busername%5D=vmalik@outlook.com&login%5Bpassword%5D=yDG6DcFP#g2fTtAxMBnX&send=	1	0.076%	
+form_key=ENmUAfOVUXrt2Je0&login%5Busername%5D=rtanter@yahoo.ca&login%5Bpassword%5D=n8FgxyNA~2dDchqMWQq9&send=	1	0.076%	
+form_key=GFcsLjqJ0QPgLCza&login%5Busername%5D=shrapnull@yahoo.ca&login%5Bpassword%5D=6pdX@3vJ6DFTyfrxE!UU&send=	1	0.076%	
+
+I checked "events in this field" and the first even had this info:
+
+
+{"addressInformation":
+
+{"shipping_address":
+{"countryId":"US",
+"regionId":"62",
+"regionCode":"WA",
+"region":"Washington",
+"street":["1654 Virginia Ave"],
+"company":"",
+"telephone":"206-548-9033",
+"postcode":"98101",
+"city":"Seattle",
+"firstname":"Sanaa",
+"lastname":"Arellano",
+"save_in_address_book":1},
+
+"billing_address":
+{"countryId":"US",
+"regionId":"62",
+"regionCode":"WA",
+"region":"Washington",
+"street":["1654 Virginia Ave"],
+"company":"",
+"telephone":"206-548-9033",
+"postcode":"98101",
+"city":"Seattle",
+"firstname":"Sanaa",
+"lastname":"Arellano",
+"save_in_address_book":1,
+"saveInAddressBook":null},
+"shipping_method_code":"flatrate","shipping_carrier_code":"flatrate"}}
+
+I am going to make some regex and compare shipping and billing addresses and bring stats for when they dont match.
+
+I am struggling with this one. the regex that I created will not divide up into groups, just remain as seperate matches but stay as the same group.  I got regex to pull the address from src_content.  
+However, I need to find out a way to split them into sepearate froups to compare them.
+
+Will continue to work on it and research it tomorrow.
+
+	sourcetype="stream:http" url=http://store.froth.ly* src_content="*"
+| rex field=src_content "(?P<address>(\d+)\s([A-Za-z,0-9]+\.?)\s([A-Za-z,0-9]+)\s?([A-Za-z,0-9]+)?)"
+
+I know that I could do better with regex, so I will look for a regex training for my on-going trainings.
+
+---------------
+A: still working on it
