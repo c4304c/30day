@@ -1,0 +1,123 @@
+So I finished the BOTSv2.  I am stuck on a few questions and need to go back to review them and maybe find some help online if I am still struggling.  
+However, the final set of questions are done:
+=============================================================================================================================================================================
+=============================================================================================================================================================================
+=============================================================================================================================================================================
+=============================================================================================================================================================================
+
+46. What is the domain name used in email addresses by someone creating multiple accounts on the Frothly store website (http://store.froth.ly) that appear to have 
+machine-generated usernames?	
+
+First I will go back to the login post page.
+	sourcetype="stream:http" uri_path="/magento2/customer/account/loginPost/
+
+I used regex to pull the domain out of the email.
+Then I put it in a stats list counted by the domain name
+
+	sourcetype="stream:http" uri_path="/magento2/customer/account/loginPost/"
+	| rex field=form_data "]=(?P<email>.+\@(?P<domain>.+\.\w+))\&"
+	| stats count by domain
+
+I sorted the counts and "elude.in" has 52.
+Most likely the mass generated domain.
+---------------
+A: elude.in
+===============================================================================================================================	
+47. Which user ID experienced the most logins to their account from different IP address and user agent combinations? Answer guidance: The user ID is an email address.	
+
+First I will go back to the login post page.
+I will now use regex to pull the email.
+Next I will create a new field with eval.
+Finally I will create stats and list of tge email and new field.
+The count will be by the email.
+
+	sourcetype="stream:http" uri_path="/magento2/customer/account/loginPost/"
+	| rex field=form_data "]=(?P<email>.+\@.+\.\w+)\&"
+	| eval ip_agent = src+" - "+http_user_agent
+	| stats list(ip_agent) count by email
+
+Only 2 emails have different IPs and user agents (one has 2 and one has 5)
+---------------
+A: Tom2014@msn.com
+===============================================================================================================================	
+48. What is the most popular coupon code being used successfully on the site?	
+
+First I will do a broad search for "coupon"
+	sourcetype="stream:http" coupon
+
+I start search (CTRL+F) for coupon and find "dest_content: {"message":"Coupon code is not valid"" in the first events.
+So I will look at dest-Content fields options.
+Some are to big to go through and 100+ entries.
+
+I see the "request" may have something that I could do.
+"request: PUT /magento2/rest/default/V1/carts/mine/coupons/20twitter HTTP/1.1"
+
+I will no go to regex and create 2.
+First one will pull the coupon code.
+	
+	sourcetype="stream:http" 
+	| rex field=request ".+\/coupons\/(?P<coupon_code>\w+)\s.+"
+	| stats count by coupon_code
+	| where coupon_code !=""
+
+It works, now I just need to find out what ones are valid
+I will put my response in order from most used.
+
+"20OFF" has 8 uses but has "dest_content: {"message":"Coupon code is not valid""
+"SAVE20" has 7 uses but has "dest_content: {"message":"Coupon code is not valid""
+"BACKTOSCHOOL2017" has 5 uses but has "dest_content: {"message":"Coupon code is not valid""
+"SPRING2017" has 4 uses but has "dest_content: {"message":"Coupon code is not valid""
+"WINTER2017" has 3 uses but has "dest_content: true"
+
+I don't need to use a 2nd regex to find out what ones are successeful after all.
+
+	sourcetype="stream:http" dest_content=true
+	| rex field=request ".+\/coupons\/(?P<coupon_code>\w+)\s.+"
+	| stats count by coupon_code
+	| where coupon_code !=""
+
+---------------
+A: WINTER2017
+===============================================================================================================================	
+49. Several user accounts sharing a common password is usually a precursor to undesirable scenario orchestrated by a fraudster. Which password is being seen most 
+often across users logging into http://store.froth.ly.	
+
+Back to the Login in page and and some regex
+
+	sourcetype="stream:http" uri_path="/magento2/customer/account/loginPost/" 
+	| rex field=form_data "]=(?P<email>.+\@.+\.\w+)&.+]=(?P<password>.+)&.+"
+	| stats list(email), list(password) count by password
+
+Reverse the order and the password "HardwareBasedEasterEggs2017" has 19 accounts.
+---------------
+A: HardwareBasedEasterEggs2017
+===============================================================================================================================	
+50. Which HTML page was most clicked by users before landing on http://store.froth.ly/magento2/checkout/ on August 19th? Answer guidance: Use earliest=1503126000 
+and latest=1503212400 to identify August 19th. Answer example: http://store.froth.ly/magento2/bigbrew.html	
+
+First, I set the Time range in the question.
+Then I searched the URL listed in the question.
+
+	sourcetype="stream:http" url="http://store.froth.ly/magento2/checkout/"
+
+Clicked the "http_referrer" field (this will give the last page they where on before they went to checkout)
+
+http://store.froth.ly/magento2/mens-frothly-tee.html	5	83.333%	
+http://store.froth.ly/magento2/frothly-beer-stein.html	1	16.667%
+
+---------------
+A: http://store.froth.ly/magento2/mens-frothly-tee.html
+===============================================================================================================================	
+51. Which HTTP user agent is associated with a fraudster who appears to be gaming the site by unsuccessfully testing multiple coupon codes?
+
+I will bring up the list of coupon codes and pick a random one to get the "failed" line and use regex for the answer.
+
+	sourcetype="stream:http"
+	| rex field=request ".+\/coupons\/(?P<coupon_code>\w+)\s.+"
+	| rex field=dest_content "{(?P<NOTVALID>.+valid).+"
+	| stats list(NOTVALID), list(coupon_code) count by http_user_agent
+	
+The answer came up while building the list of 31615 events 19080 belong to one user agent and a lot of coupon codes.
+---------------
+A: Mozilla/5.0 (Windows NT 6.333; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36
+===============================================================================================================================	
