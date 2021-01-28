@@ -1,0 +1,51 @@
+Nmap: Multiple Targets
+Platform: Rangeforce
+
+In this module, you are given a network populated with various services. Your goal is to enumerate these services and log all results along the way. In addition, you will also learn about scan speed optimization
+==========================================================================================================
+	Scan Logging: 
+	
+	Saving Scan Results:
+Run a host discovery scan and log results.
+Network: 192.168.6.0/24
+Log format: Normal, grepable, XML.
+Log file: /home/student/enumeration/host_discovery
+
+student@desktop:~$ nmap -sn 192.168.6.0/24 -oA /home/student/enumeration/host_discovery
+=====================================================	
+	Resuming Aborted Scan:
+If a saved port scan is stopped, Nmap allows you to resume the port scan with the --resume <filename> command:
+ 
+student@desktop:~$ nmap --resume ssh_scan.xml
+
+==========================================================================================================
+	Scan Speed Optimization:
+
+	
+What does the nmap -sU --top-ports=150 192.168.1.154 command do?
+ Nmap will scan TCP ports 1–150.
+ Nmap will scan UDP ports 1–150.
+ Nmap will scan the most popular 150 TCP and UDP ports.
+ Nmap will scan the most popular 150 UDP ports.
+
+A:  Nmap will scan the most popular 150 UDP ports.
+==========================================================================================================
+TCP Port Scanning
+
+Run a TCP port scan and log results.
+Network: 192.168.6.0/24
+Log format: Normal, grepable, XML
+Log file: /home/student/enumeration/tcp_all
+Ports: All
+
+student@desktop:~$nmap -p- 192.168.6.0/24 -oA /home/student/enumeration/tcp_all
+==========================================================================================================
+UDP Port Scanning
+
+Run a UDP port scan and log the results.
+Network: 192.168.6.0/24
+Log format: Normal, grepable, XML
+Log file: /home/student/enumeration/udp_top_10
+Ports: Top 10 (most common ports)
+
+student@desktop:~$sudo nmap -sU --top-ports=10 192.168.6.0/24 --open -oA /home/student/enumeration/udp_top_10
