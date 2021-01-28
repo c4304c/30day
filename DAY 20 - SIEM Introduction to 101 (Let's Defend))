@@ -1,0 +1,142 @@
+SIEM and Log Collection:
+
+What is the best method for those who do not want to manage agent software? 
+
+A: Agentless
+========================================================================================
+Log Aggregation and Parsing:
+
+Which one is not the skill of log aggregator?
+-filtering
+-parsing
+-analysis
+-enrichment
+
+A: analysis
+========================================================================================
+Log Storage:
+
+Is data update (change value, delete value etc) very important for SIEM data storage? (yes/no)
+
+A: No
+============================================
+
+Which one is the most important for SIEM storage?
+-Speed
+-Features
+-Price
+
+A: Speed
+========================================================================================
+========================================================================================
+
+QUIZ:
+
+Which is not the log collection method?
+
+Via scripts
+Via agents
+Via USB Drive 
+Agentless
+
+A: Via USB Drive 
+==================================================================================
+
+Q2
+Which one is not the cons of agentless log collection?
+
+Difficult to monitoring agent health
+Not possible to implement filter
+No required log collection software
+Need SSH, WMI or something like that
+
+A: No required log collection software
+==================================================================================
+
+Q3
+Maximum packet size that can be sent with Syslog UDP is ..... bytes
+
+512
+1024
+2048
+4096
+
+A: 1024
+==================================================================================
+
+Q4
+Which one is not the skill of log aggregator?
+
+Filtering
+Parsing
+Analysis
+Enrichment
+
+A: Analysis
+==================================================================================
+
+Q5
+You are using hash blacklist for 'mimikatz.exe'. How to attacker can bypass it?
+
+mv mimikatz.exe update.exe
+tail -n 10 mimikatz.exe
+cp mimikatz.exe /mim.exe
+echo 1 >> mimikatz.exe
+
+A: echo 1 >> mimikatz.exe
+==================================================================================
+
+Q6
+Select correct one about whitelist method
+
+Uneffective method
+Easy to manage
+This is not a method
+Highly effective but difficult to manage
+
+A: Highly effective but difficult to manage
+==================================================================================
+
+Q7
+Why indexing is important for storage technology?
+
+Deleting data
+Fast access to data
+Updating data
+It is not important
+
+A: Fast access to data
+==================================================================================
+
+Q8
+Which one is correct about long tail analysis?
+
+Most comman events are most useful
+Least common events are least useful
+Long tail analysis is not log analysis method
+Least common events are most useful
+
+A: Least common events are most useful
+==================================================================================
+
+Q9
+Select correlation about brute force attack
+
+15 Login failed in 1 minute with the same IP address
+New user added to global administrator
+Successful login from another country
+2 successfull login via SSH
+
+A: 15 Login failed in 1 minute with the same IP address
+==================================================================================
+
+Q10
+Which is one of the features you should pay attention to when storing log?
+
+Editing log
+Search speed
+Deleting data
+Updating data
+
+A: Search speed
+==================================================================================
