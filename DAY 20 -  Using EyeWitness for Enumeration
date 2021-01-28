@@ -1,0 +1,42 @@
+Using EyeWitness for Enumeration
+Platform: rangeforce
+
+In this module, you will use EyeWitness to enumerate multiple domains in the reconnaissance process
+
+======================================================================================================
+Enumeration:
+
+
+Perform a scan against the domain list using EyeWitness.
+List of domains is located in the ~/Desktop/websites.txt
+
+root@kali:~# eyewitness -f ~/Desktop/websites.txt
+
+example from the reports regarding http://retro.lab/about.html
+
+
+http://retro.lab/about.html
+Resolved to: 192.168.6.2
+
+Page Title: Joe Averaggi's Retro Websites
+Server: nginx/1.18.0 (Ubuntu)
+Date: Thu, 28 Jan 2021 11:40:10 GMT
+Content-Type: text/html
+Content-Length: 1793
+Last-Modified: Mon, 07 Dec 2020 11:24:18 GMT
+Connection: close
+ETag: "5fce10e2-701"
+Accept-Ranges: bytes
+Response Code: 200 
+
+
+
+======================================================================================================
+Enumeration:
+
+After scanning all the websites, EyeWitness will generate a report with detailed information about the headers and give you pictures of the website. Thanks to this report, you can easily look at all the websites visually without visiting them one by one.
+
+	
+Which page introduces the information disclosure vulnerability?
+
+A: retro.lab/info.php
