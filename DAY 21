@@ -1,0 +1,77 @@
+I started working on BOTS v3:
+
+Boss Of The SOC v3 - SIEM Case Investigation
+Platform : https://cyberdefenders.org/
+
+No intro on this one.
+
+================================================================================================
+
+1. This is a simple question to get you familiar with submitting answers. What is the name of the company that makes the software that you are using for this competition? Answer guidance: A six-letter word with no punctuation.		
+
+A: Splunk
+====================================================================================================================================================================
+2	List out the IAM users that accessed an AWS service (successfully or unsuccessfully) in Frothly's AWS environment? Answer guidance: Comma separated without spaces, in alphabetical order. (Example: ajackson,mjones,tmiller)	
+
+First I searched "aws"
+Then I went to "user_type and clicked IAMuser
+	aws user_type=IAMUser
+I now see in the "users" field, 4 users: bstoll, btun, splunk_access and web_admin
+
+A:bstoll,btun,splunk_access,web_admin
+====================================================================================================================================================================
+3	What field would you use to alert that AWS API activity have occurred without MFA (multi-factor authentication)? Answer guidance: Provide the full JSON path. (Example: iceCream.flavors.traditional)		
+
+I know we are looking for logs in AWS.  I search for AWS sourcetypes in the metadat and just list them.
+	
+	| metadata type="sourcetypes"
+	| stats values(sourcetype)
+
+There are a few different AWS fields: 
+
+aws:cloudtrail
+aws:cloudwatch
+aws:cloudwatch:guardduty
+aws:cloudwatchlogs
+aws:cloudwatchlogs:vpcflow
+aws:config:rule
+aws:description
+aws:elb:accesslogs
+aws:rds:audit
+aws:rds:error
+aws:s3:accesslogs
+
+I will search all the AWS fields since I am not to familar with AWS yet.
+
+	sourcetype=aws* 
+	|  fieldsummary
+	| fields field
+
+263,400 events, 950 stats, I need to narrow down some more.
+I'll try searching for 'MFA' in the fields
+
+	sourcetype=aws*
+	|  fieldsummary
+	| fields field
+	| search field = *mfa*
+
+2 fields:
+
+additionalEventData.MFAUsed
+userIdentity.sessionContext.attributes.mfaAuthenticated
+
+I opened up 2 new tabs and search these fields with "API" since we are looking for API activity.
+  Tab 1:
+	sourcetype=aws* additionalEventData.MFAUsed=* *API*
+  Tab 2:
+	sourcetype=aws* userIdentity.sessionContext.attributes.mfaAuthenticated=* *API*
+
+Tab 1 has 2155 events and Tab 2 had 0 events.
+Tab 1 has "eventType: AwsApiCall" and :
+	sessionContext: { [-]
+         attributes: { [-]
+           creationDate: 2018-08-20T15:09:21Z
+           mfaAuthenticated: false
+
+
+A: userIdentity.sessionContext.attributes.mfaAuthenticated
