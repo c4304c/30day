@@ -1,0 +1,107 @@
+4	What is the processor number used on the web servers? Answer guidance: Include any special characters/punctuation. (Example: The processor number for Intel 
+Core i7-8650U is i7-8650U.)		
+
+First, I want to see the sourcetypes that I am working with.
+
+	| metadata type="sourcetypes"
+	| stats values(sourcetype)
+
+osquery would most likely help.
+There are 3:
+
+osquery:info
+osquery:results
+osquery:warning
+
+To be safe since Im still new at this kind of, I'll check all the "osquery" fields for "cpu"
+
+	sourcetype=osquery* 
+	| fieldsummary
+	| search field =*cpu*
+
+
+1 came up:
+field	count	distinct_count	is_exact	max	mean	min	numeric_count	stdev	values
+columns.cpu_brand	2	1	1	 	 	 	0	 	[{"value":"Intel(R) Xeon(R) CPU E5-2676 v3 @ 2.40GHz","count":2}]
+
+
+
+
+A: E5-2676
+====================================================================================================================================================================
+5	Bud accidentally makes an S3 bucket publicly accessible. What is the event ID of the API call that enabled public access? Answer guidance: Include any special 
+characters/punctuation.		
+
+First, I have to find Bud's username. 
+I type "bud" and an email first pops up:
+
+  receiver_alias: [ [-]
+     Bud Stoll
+     Billy Tun
+     Jeremiah Wortoski
+
+  receiver_email: [ [-]
+     bstoll@froth.ly
+     btun@froth.ly
+     jwortoski@froth.ly
+
+Bud is bstoll@froth.ly.
+Now I need to find ouyt what events involve buckets.
+
+	sourcetype=aws* 
+	eventName=*bucket*
+
+912 events. But is I chose user "bstoll" it is now 151 events.
+So I want to look at changes to narrow down more,  I find thins event type.
+
+	eventtype=aws_cloudtrail_notable_network_events
+
+57 events now.
+
+Event Names left are:
+GetBucketAcl
+PutBucketAcl
+
+Get is used to request data
+PUT is used to send data
+
+So since he made the change, I click PutBucketAcl.
+
+2 events now.
+
+Looked through the ACL parameters fileds and found:
+
+requestParameters.AccessControlPolicy.AccessControlList.Grant{}.Grantee.URI
+http://acs.amazonaws.com/groups/global/AllUsers  2
+
+1 event left
+
+
+A: ab45689d-69cd-41e7-8705-5350402cf7ac
+====================================================================================================================================================================
+6	What is the name of the S3 bucket that was made publicly accessible?		
+
+Answer is :
+
+requestParameters: { [-]
+     AccessControlPolicy: { [+]
+     }
+     acl: [ [+]
+     ]
+     bucketName: frothlywebcode
+
+
+A: frothlywebcode
+====================================================================================================================================================================
+7	What is the name of the text file that was successfully uploaded into the S3 bucket while it was publicly accessible? Answer guidance: Provide just the file name and 
+extension, not the full path. (Example: filename.docx instead of /mylogs/web/filename.docx)	
+
+I searched the bucketname and .txt
+
+	sourcetype=aws*  frothlywebcode .txt
+of the 3 events there is 1 operation that is "REST.PUT.OBJECT"
+
+according to https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html 
+PutObject = Adds an object to a bucket
+
+A: OPEN_BUCKET_PLEASE_FIX.txt
