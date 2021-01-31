@@ -1,0 +1,148 @@
+Spent about 2 hours studying for my Sec+ and about an hour on Splunk BOTS v3:
+
+================================================
+BOTS v3:
+
+8.	What is the size (in megabytes) of the .tar.gz file that was successfully uploaded into the S3 bucket while it was publicly accessible? Answer guidance: Round to two decimal places without the unit of measure. Use 1024 for the byte conversion. Use a period (not a comma) as the radix character.	
+
+First I will set the time after the bucket went public
+
+Now I will contiue with the search that I have but replace .txt with *.tar.gz.
+29 events.
+
+This has 3 values in object_size:
+
+-	12		
+3076532	10	
+3057116	7
+
+I want to see successful events (200) that were uploaded (put)
+	
+	sourcetype=aws*  frothlywebcode *.tar.gz request_uri= *put* http_status=200
+	
+2 events, 2 in "object-size"
+3057116	1		
+3076532	1
+
+The "OPEN_BUCKET_PLEASE_FIX.txt" had the user agent as:
+Boto3/1.7.62 Python/2.7.14 Linux/4.14.47-64.38.amzn2.x86_64 Botocore/1.8.12
+
+The 2nds one had this as a user agent and the 1st did not.  It is also the earliest, so I will work on this. (3076532)
+
+I used a conversion website (https://convertlive.com/u/convert/bytes/to/megabytes#3076532)
+and got 3076532 Bytes = 2.934 Megabytes
+
+
+A: 2.93
+====================================================================================================================================================================
+9.	A Frothly endpoint exhibits signs of coin mining activity. What is the name of the first process to reach 100 percent CPU processor utilization time from this activity on this endpoint? Answer guidance: Include any special characters/punctuation.		
+
+First I will look at sourcetypes to see what looks like it might have monitoring info.
+
+	| metadata type=sourcetypes
+	| stats values(sourcetype)
+
+PerfmonMk:Process looks promising.  I want to know the fields it has.
+
+	sourcetype=PerfmonMk:Process
+	|  fieldsummary
+	| fields field
+
+It has "process_cpu_used_percent"
+I will set that at 100
+	
+	sourcetype=PerfmonMk:Process process_cpu_used_percent=100
+
+134 events.
+
+Alot of these 100% is every 10-20 seconds, so I will make a table that vies the process name and time
+
+	sourcetype=PerfmonMk:Process process_cpu_used_percent=100 
+	| table _time process_name
+
+2018-08-20 09:36:26	MicrosoftEdgeCP#2
+2018-08-20 13:37:50	chrome#5
+2018-08-20 13:38:20	chrome#5
+2018-08-20 13:38:30	chrome#4
+2018-08-20 13:38:50	chrome#4
+2018-08-20 13:39:01	chrome#4
+2018-08-20 13:39:10	chrome#4
+
+
+It looks like it was started in chrome since all are under 30 seconds.  For mining, it would spike one time than wait 4 hours. 
+A: chrome#5
+====================================================================================================================================================================
+10.	When a Frothly web server EC2 instance is launched via auto scaling, it performs automated configuration tasks after the instance starts. How many packages and dependent packages are installed by the cloud initialization script? Answer guidance: Provide the number of installed packages then number of dependent packages, comma separated without spaces.		
+
+First off, I have to search for " automated configuration tasks" in EC2.
+I found this from "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html".
+
+"When you launch an instance in Amazon EC2, you have the option of passing user data to the instance that can be used to perform common automated configuration tasks and even run scripts after the instance starts. You can pass two types of user data to Amazon EC2: shell scripts and cloud-init directives."
+
+Time again to find a sourcetype to work in.
+
+	| metadata type=sourcetypes
+	| stats values(sourcetype)
+
+I find the following 2 that might help:
+cloud-init
+cloud-init-output
+
+Looking through the events (since I am not strong with AWS) and looking for something that pops out to me, I find the 4th event has:
+
+
+Cloud-init v. 0.7.6 running 'modules:final'
+...
+Dependencies Resolved
+================================================================================
+ Package            Arch   Version                    Repository           Size
+================================================================================
+Installing:
+ httpd              x86_64 2.2.34-1.16.amzn1          amzn-main           1.2 M
+ libmemcached       x86_64 1.0.16-5.8.amzn1           amzn-main           271 k
+ memcached          x86_64 1.4.15-10.15.amzn1         amzn-main            88 k
+ osquery            x86_64 3.2.6-1.linux              osquery-s3-rpm-repo 8.0 M
+ php                x86_64 5.3.29-1.8.amzn1           amzn-main           2.8 M
+ php-mysql          x86_64 5.3.29-1.8.amzn1           amzn-main           178 k
+ php-pecl-memcached x86_64 2.1.0-3.5.amzn1            amzn-main            45 k
+Installing for dependencies:
+ apr                x86_64 1.5.2-5.13.amzn1           amzn-main           118 k
+ apr-util           x86_64 1.5.4-6.18.amzn1           amzn-main            99 k
+ apr-util-ldap      x86_64 1.5.4-6.18.amzn1           amzn-main            19 k
+ compat-gmp4        x86_64 4.3.2-1.14.amzn1           amzn-main           302 k
+ httpd-tools        x86_64 2.2.34-1.16.amzn1          amzn-main            80 k
+ mysql55-libs       x86_64 5.5.60-1.21.amzn1          amzn-updates        816 k
+ php-cli            x86_64 5.3.29-1.8.amzn1           amzn-main           2.6 M
+ php-common         x86_64 5.3.29-1.8.amzn1           amzn-main           1.0 M
+ php-pdo            x86_64 5.3.29-1.8.amzn1           amzn-main           170 k
+ php-pear           noarch 1:1.10.1-1.19.amzn1        amzn-main           413 k
+ php-pecl-igbinary  x86_64 1.1.2-0.2.git3b8ab7e.3.amzn1
+                                                      amzn-main            30 k
+ php-process        x86_64 5.3.29-1.8.amzn1           amzn-main            66 k
+ php-xml            x86_64 5.3.29-1.8.amzn1           amzn-main           234 k
+Transaction Summary
+================================================================================
+Install  7 Packages (+13 Dependent packages)
+Total download size: 18 M
+Installed size: 55 M
+Downloading packages:
+warning: /var/cache/yum/x86_64/latest/osquery-s3-rpm-repo/packages/osquery-3.2.6-1.linux.x86_64.rpm: Header V4 RSA/SHA256 Signature, key ID c9d8b80b: NOKEY
+Public key for osquery-3.2.6-1.linux.x86_64.rpm is not installed
+
+
+The one before that has "Cloud-init v. 0.7.6 running 'modules:config'"
+
+I check the search again with "'modules:final'" added and once more with "'modules:config'" instead of "'modules:final'"
+
+The config ran 3 times and the final ran 3 times as well with the same paackages and dependant packasges.
+
+The question says it " automated configuration tasks" on launch
+
+A:7,13
+====================================================================================================================================================================
+11.	What is the short hostname of the only Frothly endpoint to actually mine Monero cryptocurrency? (Example: ahamilton instead of ahamilton.mycompany.com)		
+
+Return to the search I did for question 9. It only has 1 host.
+
+
+A: BSTOLL-L
