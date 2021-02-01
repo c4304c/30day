@@ -1,0 +1,106 @@
+I worked on Splunk BOTSv3 and set-up my VM for my SOC Core Skills course starting on Tuesday.
+========================================================================================
+Splunk BOTSv3:
+
+12. How many cryptocurrency mining destinations are visited by Frothly endpoints?		
+
+First I want to set the time for the first occurance of the mining we found in 9 and 1 minute before hand.
+I want to look up the A records we looked up.
+ 
+	sourcetype="stream:dns"  host="bstoll-l" "query_type{}"=A query=*coinhive*
+	| stats count by query
+
+40 of them, coinhive looks interesting.  So I google "coinhive monero" and the first thing that came up is:
+"Coinhive, the Monero mining service, is closing down. March 8, 2019"
+
+So now I want to clear the time range and look up any queries with "coinhive"
+
+	sourcetype="stream:dns"  host="bstoll-l" "query_type{}"=A query=*coinhive*
+	| stats count by query
+6 queries come up.
+
+A: 6
+====================================================================================================================================================================
+13. Using Splunk's event order functions, what is the first seen signature ID of the coin miner threat according to Frothly's Symantec Endpoint Protection (SEP) data?		
+
+
+"return values from fields based on the order in which the event is processed
+...
+You can use this function with the stats, streamstats, and timechart commands."
+ (https://docs.splunk.com/Documentation/SCS/current/SearchReference/Eventorderfunctions)
+
+Found a new way to search specific names in sourcetype and used it to search "symantec"
+
+	| metadata type="sourcetypes" 
+	| search sourcetype IN (*symantec*)
+	| stats values(sourcetype)
+
+I found several sourcetypes :
+symantec:ep:agent:file
+symantec:ep:agt_system:file
+symantec:ep:behavior:file
+symantec:ep:packet:file
+symantec:ep:risk:file
+symantec:ep:scm_system:file
+symantec:ep:security:file
+symantec:ep:traffic:file
+
+I am not sure which one to look in so I will look at them all.
+
+	sourcetype=symantec*
+	|  fieldsummary
+
+I use CTRL+F for the word miner and find "JSCoinminer"
+
+so I will search that and look at the earliest logs
+
+	sourcetype=symantec* JSCoinminer 
+	|  reverse
+
+In the log, I find "CIDS Signature ID: 30358"
+
+A: 30358
+====================================================================================================================================================================
+14. According to Symantec's website, what is the severity of this specific coin miner threat?
+		
+I found the Symantec Security Center website "https://www.broadcom.com/support/security-center/attacksignatures"
+In that website, I have entered "Web Attack: JSCoinminer Download 8" (this was the CIDS Signature string)
+
+The website currently shows as "Severity:Medium"
+
+
+A: Medium
+====================================================================================================================================================================
+15. What is the short hostname of the only Frothly endpoint to show evidence of defeating the cryptocurrency threat? (Example: ahamilton instead of ahamilton.mycompany.com)		
+
+All of the logs from number 13 have 
+
+"Web Attack: JSCoinminer Download 8(or 6) attack blocked. Traffic has been blocked for this application:"
+in the "event_Description"
+
+The only hostname in these logs is "BTUN-L"
+
+A: BTUN-L
+====================================================================================================================================================================
+16. What is the FQDN of the endpoint that is running a different Windows operating system edition than the others?		
+
+I have to find th OS field.
+	sourcetype=*
+	|  fieldsummary
+	| where field="os"
+
+There are 2 Windows OSs showing:
+"Microsoft Windows 10 Pro","count":174},{"value":"Microsoft Windows 10 Enterprise","count":30
+
+Due to the ratios, I will look at the "Microsoft Windows 10 Enterprise"
+So I searched for the host/user:
+
+	sourcetype=* os="Microsoft Windows 10 Enterprise"  os="Microsoft Windows 10 Enterprise"
+
+host = BSTOLL-L
+
+A quick search for anything after the host name should give a FQDN
+
+	sourcetype=* BSTOLL-L*
+
+A:BSTOLL-L.froth.ly
