@@ -1,0 +1,106 @@
+Early night since I have the SOC Core Skills w/ John Strand tomorrow at 9 am
+But here is what I got done on Splunk BOTSv3:
+
+17. According to the Cisco NVM flow logs, for how many seconds does the endpoint generate Monero cryptocurrency? Answer guidance: Round to the nearest second without the unit of measure.		
+
+Theses logs dont appear in sourcetypes (just "cisco:ASA" but if I look up source I find "cisconvmflowdata"
+
+	| metadata type="sources"
+	| stats values(source)
+
+We know that Monero was mined with Coinhive, so I will search that term
+	
+	source="cisconvmflowdata" coinhive
+
+6 events, 
+fields "fet" and "fst" look interesting since they are time frames.
+I searched the meaning of FST in cicso NVM(source) and find this:
+"rename fst as start_time, fet as end_time,"  (https://www.ciscolive.com/c/dam/r/ciscolive/emea/docs/2019/pdf/BRKSEC-3446.pdf)
+
+If it is asking for the amount of time it took to generate Monero.
+That seems to me that it wants the whole time for the 6 events, 
+so I will subtracct the 1st FST from the last FET
+
+	source="cisconvmflowdata" coinhive 
+	| reverse
+
+8/20/18
+2:05:23.000 PM
+fet = Mon Aug 20 14:05:20 2018
+
+8/20/18
+1:37:51.000 PM
+fst = Mon Aug 20 13:37:34 2018
+
+14:05:20 - 13:37:34 = 00:27:46 = 1666
+
+A: 1666 
+====================================================================================================================================================================
+18	What kind of Splunk visualization was in the first file attachment that Bud emails to Frothly employees to illustrate the coin miner issue? Answer guidance: Two words. (Example: choropleth map)	
+
+From number 5, we know bud is "b-stoll" So I will search that with SMTP
+
+	sourcetype="stream:smtp" sender="bstoll@froth.ly"
+
+11 events
+
+11 events but no subjects looks 
+
+Could you please clean up your empty kombucha bottles from the breakroom? <EOM>	1
+I'm making some great changes to brewertalk!	1
+Improved brewertalk.com - check it out!	1
+Postmortem on our issue with brewertalk	1
+RE: Craft Brewer Conference	1
+RE: FW: Wild Birthday Extravaganza!!!	1
+RE: Improved brewertalk.com - check it out!	2
+RE: Supplies	1
+RE: VPN is DOWN AGAIN!!!!	1
+RE: Wild Birthday Extravaganza!!!
+
+I'll try searching "splunk"
+
+	sourcetype="stream:smtp" sender_email="bstoll@froth.ly"   *splunk*
+
+I looked at the contents of the message. and there is a base64 encoded image (2 of them).  I took the first on and decoded it with the site   
+https://codebeautify.org/base64-to-image-converter
+
+The first one was a Line Chart but the answer says wrong.
+The second one (1 second later) is a Column Chart, which is correct.
+I might be missing something but I am going to move on.
+
+A:Column Chart
+====================================================================================================================================================================
+19	What IAM user access key generates the most distinct errors when attempting to access IAM resources?	
+
+So I will search IAM users but eliminate successful events. 
+
+	user_type=IAMUser errorCode!="success" 
+1040 events, but we need IAM resources.
+
+
+Now I will create list of the access key and errors
+	
+	user_type=IAMUser errorCode!="success" 
+	| stats dc(errorCode), count by userIdentity.accessKeyId
+
+eventSource has 3 sources:
+ec2.amazonaws.com	622	
+s3.amazonaws.com	401	
+iam.amazonaws.com	17
+
+	user_type=IAMUser errorCode!="success" eventSource="iam.amazonaws.com"
+	| stats dc(errorCode), count by userIdentity.accessKeyId
+
+3 IDs all have 1 each:
+AKIAIGKL572SFDPOKLHA	1	9
+AKIAJOGCDXJ5NW5PXUPA	1	6
+ASIAZB6TMXZ7MJUJJK6X	1	2
+
+
+	user_type=IAMUser errorCode!="success" eventSource="iam.amazonaws.com"
+	| stats dc(errorCode), dc(errorMessage), count by userIdentity.accessKeyId
+	Back to look at more fileds and I see 2 error codes but 6 error messages,  I'll throw that in the search.
+
+Although AKIAJOGCDXJ5NW5PXUPA has 1 errorCode, that ID has 5 errorMessage.
+
+A: AKIAJOGCDXJ5NW5PXUPA
