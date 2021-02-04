@@ -1,0 +1,222 @@
+DAY 2
+================================================================================================================================================
+
+Lab 1: TCPDump
+
+First I will run a basic filter to show data on 192.168.99.52 from PCAP magnitude_1hr.pcap
+	$ tcpdump -n -r magnitude_1hr.pcap host 192.168.99.52
+Example of entry:
+24:06.829650 IP 68.183.138.51.80 > 192.168.99.52.52733: Flags [.], seq 1566:3026, ack 625, win 238, length 1460: HTTP
+
+Now I will filter it with port 80:
+	$ tcpdump -n -r magnitude_1hr.pcap host 192.168.99.52 and port 80
+Example of entry:
+:29:50.178704 IP 68.183.138.51.80 > 192.168.99.52.52743: Flags [.], seq 24926:26386, ack 625, win 238, length 1460: HTTP
+
+Now I will get the full ASCII of a packet:
+	$tcpdump -n -r magnitude_1hr.pcap host 192.168.99.52 and port 80 -A
+Example of entry:
+	08:14:32.638976 IP 68.183.138.51.80 > 192.168.99.52.52709: Flags [.], seq 106:1566, ack 625, win 238, length 1460: HTTP
+E ..|.@.,...D..3..c4.P...1c..E..P.......$s=New-Object IO.MemoryStream(,[Convert]::FromBase64String("H4sIAAAAAAAAAOy9Wc/qyLImfL33r1gXR6oqUadeMMaYlo7UxgZjPDGD2b21ZQx4AM8DmP76v38
+RmYaXNdRwdNR90eolLfFi7BwiY3giMiK9PBX/viwy3yn0+Hj68u+bU5b7cfSF+fvfz2XkFPg3/vEv91T8K8li51/28Zid8vzL//z732Z2Zodffv63ys7+FcbH8nr69Qv5gjeejmV2+uVvf/v738ilMsrt8+lfkV341elf4anw4mP+5T
+++/PwPIUmkOLT96J//7b+JZZadooJ+/00+FUKen8LD1T/lP//y5f/7svVO2enfzUNwcoov//PLv/3rN/kaH+xrc1st2o4HsxCiI/6mxY6NM/htmVz94uef/sf/+OmXf/x755+/jdLSvuY//7Ss8+IU/na8Xn/65cv/+gU7XNXJ6eefd
+N/J4jw+F79t/ajL/LYmozfI4HU69p9+aWbmJjbM4/cnia3SZ37+Cf6cAW0ESsOffv3yD+zvH//855f//hrNoowKPzz9pkTFKYuT5SmrfOeU/zaxo+P1tDid4bGfclizyP3pFxhEdirKLPryHAs8V8WX08//FpXX66/Q7j/+arv//Nk4
+3Z7E/asP/fz+ENw1K7Jffm144q+QQyd8Q5uD6Xw3+jfm+gX+fcdgv/z9f/2IVY+n68m1i9O/CqDvG6/+/W9/+wf58wTz+XkW5z557j++tH/9osMg7CLOalzOVVaefvnn5/rQbp9P5r/+bkOd51PNM3R56Dj+48s/NrF//Off//bL3xv
+uwev/OpT+9XjK8PfflwbpdPajk1RHdug7T4b/+UdrdjpfT4Qevz1vM2CcP//U/HA6Sg11fkKC/uP7x0ahX7yeHdLBCQ6sew6jApb45evB0DX8+Scl0k8h0I9+Bzb9tzOI2el5dyNa9bN3/I68LF7tPP/1y6wEOXd+/bI82dfT8dcvQp
+T7zU9CWcTkz58+h6uX18J37Lx4NvfPX35A0qZrMY5AYkoHVhfIsFomJ8e3r0iVX79M/ONpWC999zmEn35IE9G+XkHkoKUK1gSuIC2WBfJMdvz1W/745bflqVDC5HoK4W6ihcZX2wWd00gUYTfbPR1/+oNhP+WECgXS6kmkt0EDAyyvc
+fHrl42fFaDXfvr1O8b7rw3vaxXz1TDF7NQs5M9EEJUzKHSqBYA6uf8AZXxKv/C/oAj+Y1gXKEukGQfNzX+8CE3ImhXw0DiLw6Gdnzh2SXTczz8dIpjybp+l+R6UMi8ptR7YHNuqjw+nK5fph1z6rHEUFH/m8LJ6aPfs4XGdR3jfaVum
+TPF44N/P/wz5bPPhsh1c66wUktw/tFjx2C7UtWCs1uv7aL2emkJ7KK7WHX1zM4YL11hsLm1pCf/3zP0mtHv6om0Zms8mw1fbZrUc
+
+$s=New-Object IO.MemoryStream(,[Convert]::FromBase64String indicates a powershell command and that it is written in base64.
+
+Now I want to view the hex as well
+	file:///C:/IntroLabs/IntroClassFiles/index.html#!Tools/IntroClass/TCPDump/TCPDump.md
+Here is the result in HEX
+08:14:32.638976 IP 68.183.138.51.80 > 192.168.99.52.52709: Flags [.], seq 106:1566, ack 625, win 238, length 1460: HTTP
+        0x0000:  4520 05dc 7c96 4000 2c06 d99e 44b7 8a33  E...|.@.,...D..3
+        0x0010:  c0a8 6334 0050 cde5 a031 6397 cf45 c6cc  ..c4.P...1c..E..
+        0x0020:  5010 00ee 1cf1 0000 2473 3d4e 6577 2d4f  P.......$s=New-O
+        0x0030:  626a 6563 7420 494f 2e4d 656d 6f72 7953  bject.IO.MemoryS
+        0x0040:  7472 6561 6d28 2c5b 436f 6e76 6572 745d  tream(,[Convert]
+        0x0050:  3a3a 4672 6f6d 4261 7365 3634 5374 7269  ::FromBase64Stri
+        0x0060:  6e67 2822 4834 7349 4141 4141 4141 4141  ng("H4sIAAAAAAAA
+        0x0070:  414f 7939 5763 2f71 794c 496d 664c 3333  AOy9Wc/qyLImfL33
+        0x0080:  7231 6758 5236 6f71 5561 6465 4d4d 6159  r1gXR6oqUadeMMaY
+        0x0090:  6c6f 3755 7867 5a6a 5044 4744 3262 3231  lo7UxgZjPDGD2b21
+        0x00a0:  5a51 7834 414d 3844 6d50 3736 7633 3852  ZQx4AM8DmP76v38R
+        0x00b0:  6d59 6158 4e64 5277 644e 5239 3065 6f6c  mYaXNdRwdNR90eol
+        0x00c0:  4c66 4669 3742 7769 5933 6769 4d69 4b39  LfFi7BwiY3giMiK9
+        0x00d0:  5042 582f 7669 7779 3379 6e30 2b48 6a36  PBX/viwy3yn0+Hj6
+        0x00e0:  3875 2b62 5535 6237 6366 5346 2b66 7666  8u+bU5b7cfSF+fvf
+        0x00f0:  7a32 586b 4650 6733 2f76 4576 3931 5438  z2XkFPg3/vEv91T8
+        0x0100:  4b38 6c69 3531 2f32 385a 6964 3876 7a4c  K8li51/28Zid8vzL
+        0x0110:  2f2f 7a37 3332 5a32 5a6f 6466 6676 3633  //z732Z2Zodffv63
+        0x0120:  7973 372b 4663 6248 386e 7236 3951 7635  ys7+FcbH8nr69Qv5
+        0x0130:  676a 6565 6a6d 5632 2b75 5676 662f 7637  gjeejmV2+uVvf/v7
+        0x0140:  3338 696c 4d73 7274 382b 6c66 6b56 3334  38ilMsrt8+lfkV34
+        0x0150:  3165 6c66 3461 6e77 346d 502b 3554 2b2b  1elf4anw4mP+5T++
+        0x0160:  2f50 7750 4955 6d6b 4f4c 5439 364a 2f2f  /PwPIUmkOLT96J//
+        0x0170:  3762 2b4a 5a5a 6164 6f6f 4a2b 2f30 302b  7b+JZZadooJ+/00+
+        0x0180:  4655 4b65 6e38 4c44 3154 2f6c 502f 2f79  FUKen8LD1T/lP//y
+        0x0190:  3566 2f37 7376 564f 3265 6e66 7a55 4e77  5f/7svVO2enfzUNw
+        0x01a0:  636f 6f76 2f2f 504c 762f 3372 4e2f 6b61  coov//PLv/3rN/ka
+        0x01b0:  482b 7872 6331 7374 326f 3448 7378 4369  H+xrc1st2o4HsxCi
+        0x01c0:  492f 366d 7859 364e 4d2f 6874 6d56 7a39  I/6mxY6NM/htmVz9
+        0x01d0:  3475 6566 2f73 662f 2b4f 6d58 662f 7837  4uef/sf/+OmXf/x7
+        0x01e0:  3535 2b2f 6a64 4c53 7675 592f 2f37 5373  55+/jdLSvuY//7Ss
+        0x01f0:  382b 4955 2f6e 6138 586e 2f36 3563 762f  8+IU/na8Xn/65cv/
+        0x0200:  2b67 5537 584e 584a 3665 6566 644e 2f4a  +gU7XNXJ6eefdN/J
+        0x0210:  346a 772b 4637 3974 2f61 6a4c 2f4c 596d  4jw+F79t/ajL/LYm
+        0x0220:  6f7a 6649 3448 5536 3970 392b 6157 626d  ozfI4HU69p9+aWbm
+        0x0230:  4a6a 624d 342f 636e 6961 3353 5a33 372b  JjbM4/cnia3SZ37+
+        0x0240:  4366 3663 4157 3045 5373 4f66 6676 3379  Cf6cAW0ESsOffv3y
+        0x0250:  442b 7a76 482f 2f38 3535 662f 2f68 724e  D+zvH//855f//hrN
+        0x0260:  6f6f 774b 507a 7a39 706b 5446 4b59 7554  oowKPzz9pkTFKYuT
+        0x0270:  3553 6d72 664f 6555 2f7a 6178 6f2b 5031  5SmrfOeU/zaxo+P1
+        0x0280:  7444 6964 3462 4766 636c 697a 7950 3370  tDid4bGfclizyP3p
+        0x0290:  4678 6845 6469 724b 4c50 7279 4841 7338  FxhEdirKLPryHAs8
+        0x02a0:  5638 5758 3038 2f2f 4670 5858 3636 2f51  V8WX08//FpXX66/Q
+        0x02b0:  376a 2f2b 6172 762f 2f4e 6b34 335a 3745  7j/+arv//Nk43Z7E
+        0x02c0:  2f61 7350 2f66 7a2b 454e 7731 4b37 4a66  /asP/fz+ENw1K7Jf
+        0x02d0:  666d 3134 3471 2b51 5179 6438 5135 7544  fm144q+QQyd8Q5uD
+        0x02e0:  3658 7733 2b6a 666d 2b67 582b 6663 6467  6Xw3+jfm+gX+fcdg
+        0x02f0:  762f 7a39 662f 3249 5659 2b6e 3638 6d31  v/z9f/2IVY+n68m1
+        0x0300:  6939 4f2f 4371 4476 4736 2f2b 2f57 392f  i9O/CqDvG6/+/W9/
+        0x0310:  2b77 6635 3877 547a 2b58 6b57 357a 3535  +wf58wTz+XkW5z55
+        0x0320:  376a 2b2b 7448 2f39 6f73 4d67 3743 4c4f  7j++tH/9osMg7CLO
+        0x0330:  616c 7a4f 5656 6165 6676 6e6e 352f 7251  alzOVVaefvnn5/rQ
+        0x0340:  6270 3950 3572 2f2b 626b 4f64 3531 504e  bp9P5r/+bkOd51PN
+        0x0350:  4d33 5235 3644 6a2b 3438 732f 4e72 462f  M3R56Dj+48s/NrF/
+        0x0360:  2f4f 6666 2f2f 624c 3378 7675 7765 762f  /Off//bL3xvuwev/
+        0x0370:  4f70 542b 3958 6a4b 3850 6666 6c77 6270  OpT+9XjK8Pfflwbp
+        0x0380:  6450 616a 6b31 5248 6475 6737 5434 622f  dPajk1RHdug7T4b/
+        0x0390:  2b55 6472 646a 7066 5434 5165 767a 3176  +UdrdjpfT4Qevz1v
+        0x03a0:  4d32 4363 502f 2f55 2f48 4136 5367 3131  M2CcP//U/HA6Sg11
+        0x03b0:  666b 4b43 2f75 5037 7830 6168 5837 7965  fkKC/uP7x0ahX7ye
+        0x03c0:  4864 4c42 4351 3673 6577 366a 4170 6234  HdLBCQ6sew6jApb4
+        0x03d0:  3565 7642 3044 5838 2b53 636c 306b 3868  5evB0DX8+Scl0k8h
+        0x03e0:  3049 392b 427a 6239 747a 4f49 3265 6c35  0I9+Bzb9tzOI2el5
+        0x03f0:  6479 4e61 3962 4e33 2f49 3638 4c46 3774  dyNa9bN3/I68LF7t
+        0x0400:  5050 2f31 7936 7745 4f58 642b 2f62 4938  PP/1y6wEOXd+/bI8
+        0x0410:  3264 6654 3864 6376 5170 5437 7a55 3943  2dfT8dcvQpT7zU9C
+        0x0420:  5763 546b 7a35 382b 6836 7558 3138 4a33  WcTkz58+h6uX18J3
+        0x0430:  374c 7834 4e76 6650 5833 3541 3071 5a72  7Lx4NvfPX35A0qZr
+        0x0440:  4d59 3541 596b 6f48 5668 6649 7346 6f6d  MY5AYkoHVhfIsFom
+        0x0450:  4a38 6533 7230 6956 5837 394d 2f4f 4e70  J8e3r0iVX79M/ONp
+        0x0460:  5743 3939 397a 6d45 6e33 3549 4539 472b  WC999zmEn35IE9G+
+        0x0470:  586b 486b 6f4b 554b 3167 5375 4943 3257  XkHkoKUK1gSuIC2W
+        0x0480:  4266 4a4d 6476 7a31 572f 3734 3562 666c  BfJMdvz1W/745bfl
+        0x0490:  7156 4443 3548 6f4b 3457 3669 6863 5a58  qVDC5HoK4W6ihcZX
+        0x04a0:  3277 5764 3030 6755 5954 6662 5052 312f  2wWd00gUYTfbPR1/
+        0x04b0:  2b6f 4e68 502b 5745 4367 5853 366b 6d6b  +oNhP+WECgXS6kmk
+        0x04c0:  7430 4544 4179 7976 6366 4872 6c34 3266  t0EDAyyvcfHrl42f
+        0x04d0:  4661 4458 6676 7231 4f38 6237 7277 3376  FaDXfvr1O8b7rw3v
+        0x04e0:  6178 587a 3154 4446 374e 5173 354d 3945  axXz1TDF7NQs5M9E
+        0x04f0:  454a 557a 4b48 5371 4259 4136 7566 3841  EJUzKHSqBYA6uf8A
+        0x0500:  5a58 784b 762f 432f 6f41 6a2b 5931 6758  ZXxKv/C/oAj+Y1gX
+        0x0510:  4b45 756b 4751 664e 7a58 2b38 4345 3349  KEukGQfNzX+8CE3I
+        0x0520:  6d68 5877 3044 694c 7736 4764 6e7a 6832  mhXw0DiLw6Gdnzh2
+        0x0530:  5358 5463 7a7a 3864 4970 6a79 6270 2b6c  SXTczz8dIpjybp+l
+        0x0540:  2b52 3655 4d69 3870 7452 3759 484e 7571  +R6UMi8ptR7YHNuq
+        0x0550:  6a77 2b6e 4b35 6670 6831 7a36 7248 4555  jw+nK5fph1z6rHEU
+        0x0560:  4648 2f6d 384c 4a36 6150 6673 3458 4764  FH/m8LJ6aPfs4XGd
+        0x0570:  5233 6a66 6156 756d 5450 4634 344e 2f50  R3jfaVumTPF44N/P
+        0x0580:  2f77 7a35 6250 5068 7368 3163 3636 7755  /wz5bPPhsh1c66wU
+        0x0590:  6b74 772f 7446 6a78 3243 3755 7457 4373  ktw/tFjx2C7UtWCs
+        0x05a0:  3175 7637 614c 3265 6d6b 4a37 4b4b 3757  1uv7aL2emkJ7KK7W
+        0x05b0:  4858 317a 4d34 594c 3131 6873 4c6d 3170  HX1zM4YL11hsLm1p
+        0x05c0:  4366 2f33 7a50 306d 7448 7636 6f6d 305a  Cf/3zP0mtHv6om0Z
+        0x05d0:  6d73 386d 7731 6662 5a72 5563            ms8mw1fbZrUc
+
+Now I want to specify protocol IPv6.
+	$ tcpdump -n -r magnitude_1hr.pcap ip6
+Here is an example of a result
+	08:26:17.851531 IP6 fe80::2126:bcd7:16f4:8cdb.53138 > ff02::c.3702: UDP, length 656
+
+Finally, I will specify a network range.
+	$tcpdump -n -r magnitude_1hr.pcap net 192.168.99.0/24
+Here are some examples of the result.
+08:24:07.354211 IP 192.168.99.52.52733 > 68.183.138.51.80: Flags [.], ack 219106, win 1024, length 0
+08:24:07.354435 IP 68.183.138.51.80 > 192.168.99.52.52733: Flags [.], seq 219106:220566, ack 625, win 238, length 1460: HTTP
+
+
+
+================================================================================================================================================
+
+================================================================================================================================================
+
+Lab 2: Wireshark
+
+First I will open “magnitude_1hr” in Wireshark
+This lab was just playing with Wiresahrk.
+We looked at the 3 panels.
+We chose a packet and (I did number 7 a TLS packet)
+We expanded the lines in the 2nd frame and looked at each layer 
+We also saw how it highlighted the hex and the corresponding data.
+Then we went to {Statistics > HTTP > Requests} to see the various HTTP requests for the capture.
+Then we went to {Statistics > Conversations} to view the various HTTP requests for the capture.
+From there we filtered for IPv4 and applied a filter to the first packet “A<-->B”, so we can find out what those systems were saying to each other.
+The main screen then changed to the conversations between those 2 systems
+ip.addr==68.183.138.51 && ip.addr==192.168.99.52
+We then right-clicked a random packet and did {Follow>TCP Stream} to show the request (in red) and the response (in blue) between our two systems.
+Now we will filter for “llmnr” in the search to find all the llmnr (Link-Local Multicast Name Resolution) protocol packets.
+	llmnr
+We did the same with ipv6 next.
+	Ipv6
+Now we will filter for a certain string.
+	http contains "New-Object"
+================================================================================================================================================
+
+=======================================================================================================================================================================
+LAB 3: Memory Analysis
+
+In this lab we will be looking at a memory dump of a compromised system. We will first need to decompress it and then use Volatility to look at the network connections 
+and process information for the malware.
+
+First we unzip “memdump” in “volatility_2.6_win64_standalone”
+Now open a windows CMD and go to volatility_2.6_win64_standalon.
+C:>cd \tools\volatility_2.6_win64_standalone
+Then I used the netscan to view network connections.
+C:>volatility_2.6_win64_standalone.exe -f memdump.vmem netscan --profile=Win10x64_10586
+ Non-OS level connection gets a pid of -1 and we do not get the process name but we see some connections that are established and have SYN_Sent and closed.
+0xa98dc9c341f0     TCPv4    192.168.192.145:1605           192.168.192.146:445  ESTABLISHED      -1
+
+0xa98dc9c50490     TCPv4    192.168.192.145:1716           172.104.59.60:4444   CLOSED           -1
+This can be a concern, especially being an SMB port(445).
+I want to look at the processes in this memory dump.
+C:> volatility_2.6_win64_standalone.exe -f memdump.vmem pslist --profile=Win10x64_10586
+
+Cmd.exe caught my attention since users and day to day usage of a system doesn’t normally create a cmd.exe session.  I want to look at the earliest.
+Offset(V)          Name                    PID   PPID   Thds     Hnds   Sess  Wow64 Start
+            Exit
+
+
+0xffffa98dca6bd080 cmd.exe                5528   5452      1        0      1      0 2020-11-30 17:43:27 UTC+0000
+
+I want to look at the parent process to see what created it.
+volatility_2.6_win64_standalone.exe -f memdump.vmem pslist --profile=Win10x64_10586 | find "5452"
+	
+Offset(V)          Name                    PID   PPID   Thds     Hnds   Sess  Wow64 Start
+            Exit
+
+0xffffa98dc9307800 TrustMe.exe            5452   3616      1        0      1      0 2020-11-30 17:43:17 UTC+0000
+0xffffa98dca6bd080 cmd.exe                5528   5452      1        0      1      0 2020-11-30 17:43:27 UTC+0000
+
+TrustMe.exe is the parents, Let’s look at the dll’s for Trustme.
+C:>volatility_2.6_win64_standalone.exe -f memdump.vmem --profile=Win10x64_10586 dlllist -p 5452
+
+0x0000000000400000            0x16000                0x0 C:\Users\Sec504\Downloads\TrustMe.exe
+0x00007ffaf6290000           0x1d1000                0x0 
+C:\Windows\SYSTEM32\ntdll.dll
+0x00000000594e0000            0x52000                0x0 
+C:\Windows\System32\wow64.dll
+0x0000000059540000            0x77000                0x0 C:\Windows\System32\wow64win.dll
+0x00000000594d0000             0xa000                0x0 C:\Windows\System32\wow64cpu.dll
+
+Here we see the dll’s used and the command that ran it.  One more thing I want to do that isn’t in this lab is find out what the Parent process of Trustme.
+	
+C:> volatility_2.6_win64_standalone.exe -f memdump.vmem pslist --profile=Win10x64_10586 | find "3616"
+	
+0xffffa98dca6d3480 explorer.exe           3616   3596     38        0      1      0 2020-11-30 17:41:11 UTC+0000
+
+Explorer ran Trustme.exe
