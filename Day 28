@@ -1,0 +1,68 @@
+Day 28:
+
+This was the third day of my SCO Core Skills class.  We did the following labs:
+
+Lab 1 Rita:
+In this lab we are going to look at detecting command and control traffic on a network.
+We will be using Real Intelligence Threat Analytics (RITA) for this lab.
+
+We went over the Interval range and Connections.
+
+Some backdoors have a very strong “heartbeat”. This is where a backdoor will constantly reconnect to get commands from an attacker at a specific interval. The interval consistency of the “heartbeat” is the TS score where a value of 1 is perfect. 
+
+We Found :
+Src IP : 10.234.234.100
+Dest IP: 138.197.117.74
+Had interval range of : 8
+The TS Duration was was 0.966 (detecting how consistent each connection duration is)
+The connections were 4532 
+
+The score was 0.997
+
+Next we looked at : DNSCAT-2017-03-21
+
+Now we see 40799 visits to cat.nanobotninjas.com & nanobotninjas.com
+This seems fishy.
+
+
+
+========================================================================
+Lab 2 Domain Log Review:
+
+In this lab we are going to look at some logs that are generated in a domain password spray attack.  We will start by using DeepBlueCLI, then move into looking directly at the event logs themselves.
+
+We extracted the files into DeepBlue and go to that directory.
+C:\ cd C:\tools\DeepBlueCLI-master\
+Now we run the Domain Password Spray file.
+PS C:\.\DeepBlue.ps1 .\EntLogs\DC2-secLogs-3-26-DomainPasswordSpray.evtx
+
+	Date    : 3/26/2019 1:15:44 PM
+Log     : Security
+EventID : 4672
+Message : Multiple admin log-ons for one account
+Results : Username: LABV2-DC2$
+          User SID Access Count: 56
+Command :
+Decoded :
+
+Date    : 3/26/2019 1:15:44 PM
+Log     : Security
+EventID : 4672
+Message : High number of total logon failures for multiple accounts
+Results : Total accounts: 232
+          Total logon failures: 240
+
+Command :
+Decoded :
+
+240 failures is a lot since it’s not a big organization.
+Time to look for a pattern.
+	C:\tools\DeepBlueCLI-master\EntLogs\DC2-secLogs-3-26-DomainPasswordSpray
+Go to the “DC2-secLogs-3-26-DomainPasswordSpray” in saved logs
+Sort by Event ID and look for 4776.
+While going through them, the “Logon Account” changes.
+Most of them are: 
+Source Workstation:	WINLABV2WKSRL-9
+These were “Audit Failures”
+
+We now know that the workstation WINLABV2WKSRL-9 was attempting to authenticate to a large number of Logon Accounts.
