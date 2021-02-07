@@ -1,0 +1,82 @@
+This was the final day of the SOC Core class:
+
+We did the following:
+
+Lab 1: Velociraptor
+
+First thing I did was install and set-up Velociraptor and config as a standalone deployment( server and client on the same system).
+	C: \IntroLabs> velociraptor-v0.5.5-1-windows-amd64.exe config generate -i
+
+I then added a GUI user.
+C: \IntroLabs>velociraptor-v0.5.5-1-windows-amd64.exe --config server.config.yaml user add root --role administrator
+
+Now, I will start the server.
+C: \IntroLabs>velociraptor-v0.5.5-1-windows-amd64.exe --config server.config.yaml frontend -v
+
+The GUI is set at:  https://127.0.0.1:8889
+
+In a new CMD, I will start the client
+
+cd \IntroLabs
+First is to run MSI for the Windows packages
+	C: \IntroLabs>Velociraptor-v0.5.5-1-windows-amd64.msi
+
+Now I will start the client
+C: \IntroLabs>velociraptor-v0.5.5-1-windows-amd64.exe --config client.config.yaml client -v
+
+From here, I see a connected client on the GUI. (C.9090f4c4e6119202)
+	Client ID
+C.9090f4c4e6119202
+
+Agent Version
+2021-01-26T01:43:20+10:00 
+
+Agent Name
+velociraptor 
+
+Last Seen At
+2021-02-04 22:55:53 UTC
+
+Last Seen IP
+[::1]:60429 
+
+
+Operating System
+Windows
+
+Hostname
+Host.docker.internal
+
+Release
+Microsoft Windows 10 Enterprise10.0.19041 Build 19041
+
+Architecture
+Amd64
+
+Next I refreshed the “ntfs” data and combed through the directory structure.
+
+Next thing I did was run the netstat -naob to view connections information.
+	Active Connections
+ 	Proto  Local Address          Foreign Address        State           PID
+ 	 TCP    0.0.0.0:135            0.0.0.0:0              LISTENING       900
+  	RpcSs
+ [svchost.exe]
+  	TCP    0.0.0.0:445            0.0.0.0:0              LISTENING       4
+ Can not obtain ownership information
+ 	 TCP    0.0.0.0:5040           0.0.0.0:0              LISTENING       1168
+ 	 CDPSvc
+ [svchost.exe]
+ 	 TCP    0.0.0.0:5985           0.0.0.0:0              LISTENING       4
+ Can not obtain ownership information
+  	TCP    0.0.0.0:8000           0.0.0.0:0              LISTENING       6040
+ 	[velociraptor-v0.5.5-1-windows-amd64.exe]
+ 	 TCP    0.0.0.0:47001          0.0.0.0:0              LISTENING       4
+ 	Can not obtain ownership information
+ 	 TCP    0.0.0.0:49664          0.0.0.0:0              LISTENING       648
+ 	[lsass.exe]
+ 	 TCP    0.0.0.0:49665          0.0.0.0:0              LISTENING       516
+ Can not obtain ownership information
+ 	 TCP    0.0.0.0:49666          0.0.0.0:0              LISTENING       952
+  	EventLog
+
+Finally I created hunt called “Class Hunt” that included all the systems and collected the “Generic.System.Pstree” and downloaded the CSV of it.
