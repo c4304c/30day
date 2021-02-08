@@ -1,0 +1,54 @@
+It was a long 30 days, but I wanted to get some work in,  It wasn't much but I had done 4 more questions on BOTSv3. 
+I will continue to work on this and other excercises but will not post them until they are done.  
+It was a fun 30 days and I learned alot.  I am glad I did this.
+
+20.	Bud accidentally commits AWS access keys to an external code repository. Shortly after, he receives a notification from AWS that the account had been compromised. What is the support case ID that Amazon opens on his behalf?		
+
+I typed in "compromised and Bud's username
+	compromised bstoll
+
+2 events came up, the first event was an email sent by Amazon Web Services that started with:
+
+"Amazon Web Services has opened case 5244329601 on your behalf."
+
+It also says in the email:
+
+"Your security is important to us. We have become aware that the AWS Access Key AKIAJOGCDXJ5NW5PXUPA (belonging to IAM user "web_admin") 
+along with the corresponding Secret Key is publicly available online at 
+https://github.com/FrothlyBeers/BrewingIOT/blob/e4a98cc997de12bb7a59f18aea207a28bcec566c/MyDocuments/aws_credentials.bak."
+
+
+A: 5244329601
+====================================================================================================================================================================
+21.	AWS access keys consist of two parts: an access key ID (e.g., AKIAIOSFODNN7EXAMPLE) and a secret access key (e.g., wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY). What is the secret access key of the key that was leaked to the external code repository?		
+I went to the github that the email reported and found:
+
+[web_admin]
+aws_access_key_id = AKIAJOGCDXJ5NW5PXUPA
+aws_secret_access_key = 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
+region = us-west-1
+
+
+A: Bx8/gTsYC98T0oWiFhpmdROqhELPtXJSR9vFPNGk
+====================================================================================================================================================================
+22.	Using the leaked key, the adversary makes an unauthorized attempt to create a key for a specific resource. What is the name of that resource? Answer guidance: One word.		
+
+aws:cloudtrail sourcetype has a field called "userIdentity.accessKeyId".
+We also have Buds access_key,  So I search them.
+	 sourcetype="aws:cloudtrail" userIdentity.accessKeyId="AKIAJOGCDXJ5NW5PXUPA"
+9 events, so I looked through "eventName" and found "CreateAccessKey".
+Since thequestions says "makes an unauthorized attempt to create a key", I click that.
+The error message says:
+"User: arn:aws:iam::622676721278:user/web_admin is not authorized to perform: iam:CreateAccessKey on resource: user nullweb_admin"
+
+
+A: nullweb_admin
+====================================================================================================================================================================
+23.	Using the leaked key, the adversary makes an unauthorized attempt to describe an account. What is the full user agent string of the application that originated the request?		
+
+I will backtrack tthe 9 events from question 22.
+I will click on "eventName : DescribeAccountAttributes"
+1 event with user agent : ElasticWolf/5.1.6
+
+
+A: ElasticWolf/5.1.6
